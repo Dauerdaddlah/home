@@ -164,7 +164,7 @@ public class AirControl
 		}
 		catch (InvocationTargetException | InterruptedException e)
 		{
-			throw new RuntimeException("could not create GUI");
+			throw new RuntimeException("could not create GUI", e);
 		}
 		
 		this.gui = refGui.get();
@@ -217,7 +217,14 @@ public class AirControl
 	{
 		while(true)
 		{
-			
+			try
+			{
+				Thread.sleep(10000);
+			} catch (InterruptedException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 }
