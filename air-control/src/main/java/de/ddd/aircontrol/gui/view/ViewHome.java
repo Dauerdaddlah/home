@@ -62,7 +62,6 @@ public class ViewHome extends JPanel implements View
 		tglMode.addItemListener(e ->
 			{
 				Environment.getDefault().setHandMode(tglMode.isSelected());
-				updateState(Environment.getDefault());
 			});
 		
 		slider = new JSlider(JSlider.HORIZONTAL, -1, 3, -1);

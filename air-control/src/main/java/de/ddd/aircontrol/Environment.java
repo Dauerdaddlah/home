@@ -7,6 +7,7 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.ddd.aircontrol.control.Controller;
 import de.ddd.aircontrol.datalog.DataLogger;
 import de.ddd.aircontrol.pi.Pi;
 import de.ddd.aircontrol.sensor.Sensor;
@@ -39,14 +40,16 @@ public class Environment
 	private final Pi pi;
 	private final DataLogger logger;
 	private final Executor changeExecutor;
+	private final Controller controller;
 	
 	private final Map<String, SensorResult> lastResults;
 	private volatile boolean handMode;
 	private volatile Level lastLevel;
 	private volatile Level lastBridgeLevel;
+	private volatile boolean simulation;
 	
 	public Environment(Ventilation ventilation, Map<String, Sensor> sensors, Settings settings, Pi pi,
-			DataLogger logger, Executor changeExecutor)
+			DataLogger logger, Executor changeExecutor, Controller controller)
 	{
 		super();
 		this.ventilation = ventilation;
@@ -55,11 +58,13 @@ public class Environment
 		this.pi = pi;
 		this.logger = logger;
 		this.changeExecutor = changeExecutor;
+		this.controller = controller;
 		
 		lastResults = new HashMap<>();
 		handMode = false;
 		lastLevel = Level.DEFAULT;
 		lastBridgeLevel = Level.DEFAULT;
+		simulation = false;
 	}
 	
 	public void pullSensors()
@@ -159,5 +164,20 @@ public class Environment
 	public Executor getChangeExecutor()
 	{
 		return changeExecutor;
+	}
+	
+	public boolean isSimulation()
+	{
+		return simulation;
+	}
+	
+	public void setSimulation(boolean simulation)
+	{
+		this.simulation = simulation;
+	}
+	
+	public Controller getController()
+	{
+		return controller;
 	}
 }

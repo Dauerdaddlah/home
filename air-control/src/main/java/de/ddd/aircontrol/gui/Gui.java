@@ -10,6 +10,7 @@ import java.awt.event.ItemEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -41,6 +42,8 @@ public class Gui
 	private CardLayout cardView;
 	private JPanel pnlView;
 	
+	private final ZoomPanel zoom;
+	
 	private final List<JToggleButton> viewButtons;
 	private String currentView;
 	
@@ -53,8 +56,9 @@ public class Gui
 		
 		initUi();
 		
-		JPanel zoom = new ZoomPanel();
+		zoom = new ZoomPanel();
 		zoom.setPreferredSize(new Dimension(WIDTH, HEIGHT));
+		
 		JPanel content = initLayout();
 		
 		this.frame = new JFrame();
@@ -63,8 +67,8 @@ public class Gui
 		frame.getContentPane().setLayout(new BorderLayout());
 		frame.getContentPane().add(zoom, BorderLayout.CENTER);
 		
-		zoom.setLayout(new BorderLayout());
-		zoom.add(content, BorderLayout.CENTER);
+		zoom.setLayout(new GridBagLayout());
+		zoom.add(content, new GBC().fill(Fill.BOTH));
 		
 		// TODO set undecorated if no sim available
 		frame.setUndecorated(false);
@@ -76,6 +80,15 @@ public class Gui
 	
 	public void updateState(Environment env)
 	{
+		if(env.isSimulation() && zoom.getBorder() == null)
+		{
+			zoom.setBorder(BorderFactory.createLineBorder(Color.RED, 3));
+		}
+		else if(!env.isSimulation() && zoom.getBorder() != null)
+		{
+			zoom.setBorder(null);
+		}
+		
 		for(View view : views)
 		{
 			view.updateState(env);

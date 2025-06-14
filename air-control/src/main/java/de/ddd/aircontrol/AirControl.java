@@ -100,7 +100,6 @@ public class AirControl implements Executor
 	public static final String SETTING_CONTROLLER_END3 = SETTING_CONTROLLER_PREFIX + "end3";
 	
 	private final Gui gui;
-	private final Controller controller;
 	
 	private final PriorityBlockingQueue<Event> actions;
 	
@@ -184,14 +183,13 @@ public class AirControl implements Executor
 		
 		this.gui = refGui.get();
 		
-		Environment env = new Environment(ventilation, sensors, settings, pi, dataLogger, this);
-		Environment.setDefault(env);
 		
+		Controller controller;
 		switch(settings.getString(SETTING_CONTROLLER_TYPE, SETTING_CONTROLLER_TYPE_SIMPLE))
 		{
 			case SETTING_CONTROLLER_TYPE_SIMPLE ->
 			{
-				this.controller = new ControllerSimple(
+				controller = new ControllerSimple(
 						settings.getInt(SETTING_CONTROLLER_START1, 50),
 						settings.getInt(SETTING_CONTROLLER_START2, 60),
 						settings.getInt(SETTING_CONTROLLER_START3, 70),
@@ -204,6 +202,9 @@ public class AirControl implements Executor
 				throw new RuntimeException("unknwon controller type configuration");
 			}
 		}
+		
+		Environment env = new Environment(ventilation, sensors, settings, pi, dataLogger, this, controller);
+		Environment.setDefault(env);
 	}
 
 	private EnumMap<Level, Configuration> getConfigurations(Settings settings, String type)
@@ -262,6 +263,9 @@ public class AirControl implements Executor
 				log.info("next event");
 				Event e = getNextEvent();
 				e.action.run();
+				
+				SwingUtilities.invokeLater(() ->
+					gui.updateState(Environment.getDefault()));
 			}
 			catch (Exception exc)
 			{
@@ -307,7 +311,7 @@ public class AirControl implements Executor
 			
 			if(!env.isHandMode())
 			{
-				Level lvl = controller.check(env);
+				Level lvl = env.getController().check(env);
 				
 				if(lvl != env.getLastLevel())
 				{
@@ -315,9 +319,6 @@ public class AirControl implements Executor
 					env.getVentilation().setLevel(lvl, env);
 				}
 			}
-			
-			SwingUtilities.invokeLater(() ->
-				gui.updateState(env));
 		}
 		finally
 		{
