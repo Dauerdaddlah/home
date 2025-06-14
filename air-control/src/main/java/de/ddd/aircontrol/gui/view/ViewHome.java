@@ -39,23 +39,23 @@ public class ViewHome extends JPanel implements View
 		lblTemperature = new JLabel("- °");
 		
 		lblBridge = new JLabel();
-		lblBridge.setIcon(new ImageIcon(GuiResources.getResource("switch-unknown_64.png")));
+		lblBridge.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.SWITCH_UNKNOWN_64)));
 		
 		JLabel lblLevelimg = new JLabel();
-		lblLevelimg.setIcon(new ImageIcon(GuiResources.getResource("fan_64.png")));
+		lblLevelimg.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.FAN_64)));
 		lblLevelimg.setForeground(Color.RED);
 		
 		JLabel lblTemperatureImg = new JLabel();
-		lblTemperatureImg.setIcon(new ImageIcon(GuiResources.getResource("thermometer_64.png")));
+		lblTemperatureImg.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.THERMOMETER_64)));
 		
 		JLabel lblHumidImg = new JLabel();
-		lblHumidImg.setIcon(new ImageIcon(GuiResources.getResource("waterdrops_64.png")));
+		lblHumidImg.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.WATERDROPS_64)));
 		
 		JLabel lblBridgeImg = new JLabel();
-		lblBridgeImg.setIcon(new ImageIcon(GuiResources.getResource("turn-on_64.png")));
+		lblBridgeImg.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.TURN_ON_64)));
 		
 		JToggleButton tglMode = new JToggleButton();
-		tglMode.setIcon(new ImageIcon(GuiResources.getResource("finger_64.png")));
+		tglMode.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.FINGER_64)));
 		tglMode.setMargin(new Insets(5, 5, 5, 5));
 		
 		slider = new JSlider(JSlider.HORIZONTAL, -1, 3, -1);
@@ -161,15 +161,15 @@ public class ViewHome extends JPanel implements View
 		{
 			case BRIDGE ->
 			{
-				lblBridge.setIcon(new ImageIcon(GuiResources.getResource("switch-on_64.png")));
+				lblBridge.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.SWITCH_ON_64)));
 			}
 			case NORMAL ->
 			{
-				lblBridge.setIcon(new ImageIcon(GuiResources.getResource("switch-off_64.png")));
+				lblBridge.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.SWITCH_OFF_64)));
 			}
 			case UNKNOWN ->
 			{
-				lblBridge.setIcon(new ImageIcon(GuiResources.getResource("switch-unknown_64.png")));
+				lblBridge.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.SWITCH_UNKNOWN_64)));
 			}
 		}
 		

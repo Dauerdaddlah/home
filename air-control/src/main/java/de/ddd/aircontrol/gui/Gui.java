@@ -120,14 +120,14 @@ public class Gui
 	private JPanel initNavigationPanel()
 	{
 		JToggleButton tglViewSettings = new JToggleButton();
-		tglViewSettings.setIcon(new ImageIcon(getClass().getResource("setting_32.png")));
+		tglViewSettings.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.SETTING_32)));
 		tglViewSettings.setMargin(new Insets(5, 5, 5, 5));
 		tglViewSettings.putClientProperty(CLIENT_PROPERTY_VIEW, VIEW_SETTINGS);
 		tglViewSettings.addItemListener(this::viewStateChanged);
 		viewButtons.add(tglViewSettings);
 		
 		JToggleButton tglViewHome = new JToggleButton();
-		tglViewHome.setIcon(new ImageIcon(getClass().getResource("home_32.png")));
+		tglViewHome.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.HOME_32)));
 		tglViewHome.setMargin(new Insets(5, 5, 5, 5));
 		tglViewHome.putClientProperty(CLIENT_PROPERTY_VIEW, VIEW_HOME);
 		tglViewHome.setSelected(true);
@@ -135,7 +135,7 @@ public class Gui
 		viewButtons.add(tglViewHome);
 		
 		JToggleButton tglViewSim = new JToggleButton();
-		tglViewSim.setIcon(new ImageIcon(getClass().getResource("cube_32.png")));
+		tglViewSim.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.CUBE_32)));
 		tglViewSim.setMargin(new Insets(5, 5, 5, 5));
 		tglViewSim.putClientProperty(CLIENT_PROPERTY_VIEW, VIEW_SIM);
 		tglViewSim.addItemListener(this::viewStateChanged);
