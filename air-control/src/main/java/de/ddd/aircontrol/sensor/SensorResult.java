@@ -15,6 +15,11 @@ public record SensorResult(
 		}
 	}
 	
+	public SensorResult()
+	{
+		this(Double.NaN, Double.NaN);
+	}
+	
 	public boolean hasTemperature()
 	{
 		return !Double.isNaN(temperature);

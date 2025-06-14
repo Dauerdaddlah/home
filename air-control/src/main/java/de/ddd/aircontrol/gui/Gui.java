@@ -1,41 +1,61 @@
 package de.ddd.aircontrol.gui;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.awt.event.ItemEvent;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
+import javax.swing.JSeparator;
 import javax.swing.JToggleButton;
+import javax.swing.UIManager;
 
-import de.ddd.aircontrol.gui.gbc.Anchor;
+import de.ddd.aircontrol.Environment;
 import de.ddd.aircontrol.gui.gbc.Fill;
 import de.ddd.aircontrol.gui.gbc.GBC;
+import de.ddd.aircontrol.gui.view.View;
+import de.ddd.aircontrol.gui.view.ViewHome;
+import de.ddd.aircontrol.gui.view.ViewSettings;
+import de.ddd.aircontrol.gui.view.ViewSim;
 
 public class Gui
 {
 	public static final int WIDTH = 480;
 	public static final int HEIGHT = 320;
 	
+	public static final String CLIENT_PROPERTY_VIEW = "view";
+	public static final String VIEW_HOME = "home";
+	public static final String VIEW_SETTINGS = "settings";
+	public static final String VIEW_SIM = "sim";
+	
 	private final JFrame frame;
+	
+	private CardLayout cardView;
+	private JPanel pnlView;
+	
+	private final List<JToggleButton> viewButtons;
+	private String currentView;
+	
+	private List<View> views;
 	
 	public Gui()
 	{
-		JPanel zoom = new JPanel();
-		JPanel content = new JPanel();
+		viewButtons = new ArrayList<>();
+		views = new ArrayList<>();
 		
-		initLayout(content);
+		initUi();
+		
+		JPanel zoom = new ZoomPanel();
+		zoom.setPreferredSize(new Dimension(WIDTH, HEIGHT));
+		JPanel content = initLayout();
 		
 		this.frame = new JFrame();
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -46,137 +66,114 @@ public class Gui
 		zoom.setLayout(new BorderLayout());
 		zoom.add(content, BorderLayout.CENTER);
 		
-		frame.setUndecorated(true);
-//		frame.setAlwaysOnTop(true);
-		frame.setPreferredSize(new Dimension(WIDTH, HEIGHT));
+		// TODO set undecorated if no sim available
+		frame.setUndecorated(false);
 		frame.pack();
 		frame.setLocationRelativeTo(null);
 		
 		frame.setVisible(true);
 	}
-
-	private void initLayout(JPanel content)
+	
+	public void updateState(Environment env)
 	{
+		for(View view : views)
+		{
+			view.updateState(env);
+		}
+	}
+	
+	private void initUi()
+	{
+		UIManager.put("ToggleButton.select", new Color(171, 235, 198)); // light green
+	}
+
+	private JPanel initLayout()
+	{
+		cardView = new CardLayout();
+		pnlView = new JPanel();
+		pnlView.setLayout(cardView);
+		
+		JPanel pnlViewHome = new ViewHome();
+		JPanel pnlViewSettings = new ViewSettings();
+		JPanel pnlViewSim = new ViewSim();
+		
+		views.add((View)pnlViewHome);
+		views.add((View)pnlViewSettings);
+		views.add((View)pnlViewSim);
+		
+		pnlView.add(pnlViewHome, VIEW_HOME);
+		pnlView.add(pnlViewSettings, VIEW_SETTINGS);
+		pnlView.add(pnlViewSim, VIEW_SIM);
+		
+		JPanel top = initNavigationPanel();
+		
+		JPanel content = new JPanel();
 		content.setLayout(new GridBagLayout());
 		
-		// layout
-		// --------------------------------------------------------------
-		//                                                      Settings
-		//
-		//               Humid   XXX %            Temp   XXX°
-		//               Bridge  XXX              Manual  XXX
-		// Level                        Switch
-		// --------------------------------------------------------------
+		content.add(top, new GBC(0, 0).fill(Fill.HORIZONTAL));
+		content.add(new JSeparator(JSeparator.HORIZONTAL), new GBC(1, 0).fill(Fill.HORIZONTAL));
+		content.add(pnlView, new GBC(2, 0).fill(Fill.BOTH));
 		
-		JLabel lblHumidity = new JLabel("- %");
+		return content;
+	}
+	
+	private JPanel initNavigationPanel()
+	{
+		JToggleButton tglViewSettings = new JToggleButton();
+		tglViewSettings.setIcon(new ImageIcon(getClass().getResource("setting_32.png")));
+		tglViewSettings.setMargin(new Insets(5, 5, 5, 5));
+		tglViewSettings.putClientProperty(CLIENT_PROPERTY_VIEW, VIEW_SETTINGS);
+		tglViewSettings.addItemListener(this::viewStateChanged);
+		viewButtons.add(tglViewSettings);
 		
-		JLabel lblTemperature = new JLabel("- °");
+		JToggleButton tglViewHome = new JToggleButton();
+		tglViewHome.setIcon(new ImageIcon(getClass().getResource("home_32.png")));
+		tglViewHome.setMargin(new Insets(5, 5, 5, 5));
+		tglViewHome.putClientProperty(CLIENT_PROPERTY_VIEW, VIEW_HOME);
+		tglViewHome.setSelected(true);
+		tglViewHome.addItemListener(this::viewStateChanged);
+		viewButtons.add(tglViewHome);
 		
-		JLabel lblBridge = new JLabel();
-		lblBridge.setIcon(new ImageIcon(getClass().getResource("switch-unknown_64.png")));
+		JToggleButton tglViewSim = new JToggleButton();
+		tglViewSim.setIcon(new ImageIcon(getClass().getResource("cube_32.png")));
+		tglViewSim.setMargin(new Insets(5, 5, 5, 5));
+		tglViewSim.putClientProperty(CLIENT_PROPERTY_VIEW, VIEW_SIM);
+		tglViewSim.addItemListener(this::viewStateChanged);
+		viewButtons.add(tglViewSim);
 		
-		JLabel lblLevelimg = new JLabel();
-		lblLevelimg.setIcon(new ImageIcon(getClass().getResource("fan_64.png")));
+		JPanel top = new JPanel();
+		top.setLayout(new GridBagLayout());
 		
-		JLabel lblTemperatureImg = new JLabel();
-		lblTemperatureImg.setIcon(new ImageIcon(getClass().getResource("thermometer_64.png")));
+		top.add(new JLabel(),
+				new GBC(0, 0).fill(Fill.HORIZONTAL));
+		top.add(tglViewSim,
+				new GBC(0, 1).insets(5));
+		top.add(tglViewHome,
+				new GBC(0, 2).insets(5));
+		top.add(tglViewSettings,
+				new GBC(0, 3).insets(5));
 		
-		JLabel lblHumidImg = new JLabel();
-		lblHumidImg.setIcon(new ImageIcon(getClass().getResource("waterdrops_64.png")));
+		return top;
+	}
+	
+	private void viewStateChanged(ItemEvent e)
+	{
+		JToggleButton tgl = (JToggleButton)e.getItemSelectable();
 		
-		JLabel lblBridgeImg = new JLabel();
-		lblBridgeImg.setIcon(new ImageIcon(getClass().getResource("turn-on_64.png")));
-		
-		JToggleButton tglMode = new JToggleButton();
-		tglMode.setIcon(new ImageIcon(getClass().getResource("finger_64.png")));
-		
-		JSlider slider = new JSlider(JSlider.HORIZONTAL, -1, 3, -1);
-		slider.setSnapToTicks(true);
-		slider.setPaintTicks(true);
-		slider.setMajorTickSpacing(1);
-		slider.setPaintLabels(true);
-		Dictionary<Integer, JComponent> levelLabelTable = new Hashtable<>();
-		levelLabelTable.put(-1, new JLabel("Standard"));
-		levelLabelTable.put(0, new JLabel("Aus"));
-		levelLabelTable.put(1, new JLabel("1"));
-		levelLabelTable.put(2, new JLabel("2"));
-		levelLabelTable.put(3, new JLabel("3"));
-		slider.setLabelTable(levelLabelTable);
-		
-		JButton btnSettings = new JButton();
-		btnSettings.setIcon(new ImageIcon(getClass().getResource("setting_32.png")));
-		btnSettings.setMargin(new Insets(5, 5, 5, 5));
-		
-		int row = 0;
-		content.add(btnSettings,
-				new GBC(row, 3).anchor(Anchor.NORTH_EAST).insets(5));
-		
-		content.add(new JLabel(), new GBC(row, 0).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 1).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 2).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 3).fill(Fill.BOTH));
-		
-		row++;
-		content.add(lblHumidImg,
-				new GBC(row, 0).anchor(Anchor.EAST).insets(5));
-		content.add(lblHumidity,
-				new GBC(row, 1).anchor(Anchor.WEST).insets(5));
-		content.add(new JLabel("Feuchtigkeit"),
-				new GBC(row + 1, 0).width(2));
-		
-		content.add(lblTemperatureImg,
-				new GBC(row, 2).anchor(Anchor.EAST).insets(5));
-		content.add(lblTemperature,
-				new GBC(row, 3).anchor(Anchor.WEST).insets(5));
-		content.add(new JLabel("Temperatur"),
-				new GBC(row + 1, 2).width(2));
-		
-		row++;
-		content.add(new JLabel(), new GBC(row, 0).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 1).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 2).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 3).fill(Fill.BOTH));
-		
-		row++;
-		content.add(lblBridgeImg,
-				new GBC(row, 0).anchor(Anchor.EAST).insets(5));
-		content.add(lblBridge,
-				new GBC(row, 1).anchor(Anchor.WEST).insets(5));
-		content.add(new JLabel("Schalter"),
-				new GBC(row + 1, 0).width(2));
-		
-		content.add(tglMode,
-				new GBC(row, 2).width(2).insets(5));
-		content.add(new JLabel("Handbetrieb"),
-				new GBC(row + 1, 2).width(2));
-		
-		row++;
-		content.add(new JLabel(), new GBC(row, 0).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 1).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 2).fill(Fill.BOTH));
-		content.add(new JLabel(), new GBC(row, 3).fill(Fill.BOTH));
-		
-		row++;
-		content.add(lblLevelimg,
-				new GBC(row, 0).insets(5));
-		content.add(slider,
-				new GBC(row, 1).width(3).fill(Fill.HORIZONTAL).insets(5));
-		
-		for(int i = 0; i < content.getComponentCount(); i++)
+		if(e.getStateChange() == ItemEvent.SELECTED)
 		{
-			Component c = content.getComponent(i);
-			c.setFont(c.getFont().deriveFont(20f));
+			String newView = (String)tgl.getClientProperty(CLIENT_PROPERTY_VIEW);
+			
+			if(currentView != newView)
+			{
+				currentView = newView;
+				cardView.show(pnlView, currentView);
+			}
 		}
 		
-//		for(int r = 0; r < row + 1; r++)
-//		{
-//			for(int col = 0; col < 4; col++)
-//			{
-//				JLabel lbl = new JLabel();
-//				lbl.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
-//				content.add(lbl,
-//						new GBC(r, col).fill(Fill.BOTH).weight(0, 0));
-//			}
-//		}
+		for(JToggleButton t : viewButtons)
+		{
+			t.setSelected(t.getClientProperty(CLIENT_PROPERTY_VIEW) == currentView);
+		}
 	}
 }

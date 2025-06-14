@@ -15,6 +15,8 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.ddd.aircontrol.control.Controller;
+import de.ddd.aircontrol.control.ControllerSimple;
 import de.ddd.aircontrol.datalog.DataLogger;
 import de.ddd.aircontrol.datalog.DataLoggerFile;
 import de.ddd.aircontrol.gui.Gui;
@@ -84,20 +86,28 @@ public class AirControl
 	public static final String SETTING_VENTILATION_BRIDGE_MODE_REVERSE = SETTING_VENTILATION_PREFIX + "bridge.reversed";
 	public static final String SETTING_VENTILATION_CONFIG_PIN_SUFFIX = ".gpiopins";
 	
-	private final Settings settings;
-	private final Gui gui;
-	private final Pi pi;
-	private final DataLogger dataLogger;
-	private final Ventilation ventilation;
+	public static final String SETTING_CONTROLLER_PREFIX = SETTING_PREFIX + "controller.";
+	public static final String SETTING_CONTROLLER_TYPE = SETTING_CONTROLLER_PREFIX + "type";
+	public static final String SETTING_CONTROLLER_TYPE_SIMPLE = "simple";
 	
-	private final Map<String, Sensor> sensors;
+	public static final String SETTING_CONTROLLER_START1 = SETTING_CONTROLLER_PREFIX + "start1";
+	public static final String SETTING_CONTROLLER_START2 = SETTING_CONTROLLER_PREFIX + "start2";
+	public static final String SETTING_CONTROLLER_START3 = SETTING_CONTROLLER_PREFIX + "start3";
+	public static final String SETTING_CONTROLLER_END1 = SETTING_CONTROLLER_PREFIX + "end1";
+	public static final String SETTING_CONTROLLER_END2 = SETTING_CONTROLLER_PREFIX + "end2";
+	public static final String SETTING_CONTROLLER_END3 = SETTING_CONTROLLER_PREFIX + "end3";
+	
+	private final Gui gui;
+	private final Environment env;
+	private final Controller controller;
 	
 	public AirControl()
 	{
 		log.debug("load settings");
-		settings = new SettingsProperties(Paths.get("config", "aircontrol.properties"));
+		Settings settings = new SettingsProperties(Paths.get("config", "aircontrol.properties"));
 		
 		log.debug("create pi");
+		final Pi pi;
 		switch(settings.getString(SETTING_PI_TYPE, SETTING_PI_TYPE_HARDWARE))
 		{
 			case SETTING_PI_TYPE_HARDWARE ->
@@ -115,10 +125,10 @@ public class AirControl
 		}
 		
 		log.debug("create data logger");
-		dataLogger = new DataLoggerFile(Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")));
+		DataLogger dataLogger = new DataLoggerFile(Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")));
 		
 		log.debug("load sensors");
-		sensors = new HashMap<>();
+		Map<String, Sensor> sensors = new HashMap<>();
 		for(String name : settings.getString(SETTING_SENSOR_NAMES, "bath").split("[,]"))
 		{
 			name = name.trim();
@@ -149,7 +159,7 @@ public class AirControl
 		}
 		
 		log.debug("create ventilation");
-		ventilation = new Ventilation(pi, getConfigurations(settings, "normal"), getConfigurations(settings, "bridge"),
+		Ventilation ventilation = new Ventilation(pi, getConfigurations(settings, "normal"), getConfigurations(settings, "bridge"),
 				settings.getInt(SETTING_VENTILATION_BRIDGE_MODE, -1),
 				settings.getBoolean(SETTING_VENTILATION_BRIDGE_MODE_REVERSE, false));
 		
@@ -168,6 +178,26 @@ public class AirControl
 		}
 		
 		this.gui = refGui.get();
+		
+		env = new Environment(ventilation, sensors, settings, pi, dataLogger);
+		
+		switch(settings.getString(SETTING_CONTROLLER_TYPE, SETTING_CONTROLLER_TYPE_SIMPLE))
+		{
+			case SETTING_CONTROLLER_TYPE_SIMPLE ->
+			{
+				this.controller = new ControllerSimple(
+						settings.getInt(SETTING_CONTROLLER_START1, 50),
+						settings.getInt(SETTING_CONTROLLER_START2, 60),
+						settings.getInt(SETTING_CONTROLLER_START3, 70),
+						settings.getInt(SETTING_CONTROLLER_END1, 40),
+						settings.getInt(SETTING_CONTROLLER_END2, 50),
+						settings.getInt(SETTING_CONTROLLER_END3, 60));
+			}
+			default ->
+			{
+				throw new RuntimeException("unknwon controller type configuration");
+			}
+		}
 	}
 
 	private EnumMap<Level, Configuration> getConfigurations(Settings settings, String type)
@@ -215,15 +245,31 @@ public class AirControl
 	
 	void startLoop()
 	{
+		log.info("start loop");
 		while(true)
 		{
 			try
 			{
-				Thread.sleep(10000);
-			} catch (InterruptedException e)
+				log.info("next loop");
+				env.pullSensors();
+				controller.check(env);
+				
+				SwingUtilities.invokeLater(() ->
+					gui.updateState(env));
+			}
+			catch (Exception e)
 			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.error("Error within loop", e);
+			}
+			
+			try
+			{
+				Thread.sleep(60 * 1000);
+			}
+			catch (InterruptedException e)
+			{
+				log.trace("Thread interrupted, start loop early");
+				Thread.interrupted();
 			}
 		}
 	}
