@@ -1,7 +1,7 @@
 package de.ddd.aircontrol.pi;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
@@ -21,7 +21,7 @@ public class RaspberryPi implements Pi
 	{
 		this.model = model;
 		pi4j = Pi4J.newAutoContext();
-		pinCache = new HashMap<>();
+		pinCache = new ConcurrentHashMap<>();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -33,13 +33,7 @@ public class RaspberryPi implements Pi
 			throw new IllegalArgumentException("invalid gpio-pin " + gpioPin);
 		}
 		
-		PiPin pin = pinCache.get(gpioPin);
-		
-		if(pin == null)
-		{
-			pin = new Pin(gpioPin, mode);
-			pinCache.put(gpioPin, pin);
-		}
+		PiPin pin = pinCache.computeIfAbsent(gpioPin, p -> new Pin(gpioPin, mode));
 		
 		if(pin.getPinMode() != mode)
 		{

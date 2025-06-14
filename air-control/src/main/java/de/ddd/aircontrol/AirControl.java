@@ -8,6 +8,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.SwingUtilities;
@@ -33,7 +35,7 @@ import de.ddd.aircontrol.ventilation.Level;
 import de.ddd.aircontrol.ventilation.Ventilation;
 import de.ddd.aircontrol.ventilation.Ventilation.Configuration;
 
-public class AirControl
+public class AirControl implements Executor
 {
 	private static final Logger log = LoggerFactory.getLogger(AirControl.class);
 	
@@ -98,11 +100,14 @@ public class AirControl
 	public static final String SETTING_CONTROLLER_END3 = SETTING_CONTROLLER_PREFIX + "end3";
 	
 	private final Gui gui;
-	private final Environment env;
 	private final Controller controller;
+	
+	private final PriorityBlockingQueue<Event> actions;
 	
 	public AirControl()
 	{
+		actions = new PriorityBlockingQueue<>();
+		
 		log.debug("load settings");
 		Settings settings = new SettingsProperties(Paths.get("config", "aircontrol.properties"));
 		
@@ -179,7 +184,8 @@ public class AirControl
 		
 		this.gui = refGui.get();
 		
-		env = new Environment(ventilation, sensors, settings, pi, dataLogger);
+		Environment env = new Environment(ventilation, sensors, settings, pi, dataLogger, this);
+		Environment.setDefault(env);
 		
 		switch(settings.getString(SETTING_CONTROLLER_TYPE, SETTING_CONTROLLER_TYPE_SIMPLE))
 		{
@@ -246,31 +252,97 @@ public class AirControl
 	void startLoop()
 	{
 		log.info("start loop");
+		
+		addEvent(new Event(System.currentTimeMillis(), this::checkSensors));
+		
 		while(true)
 		{
 			try
 			{
-				log.info("next loop");
-				env.pullSensors();
-				controller.check(env);
-				
-				SwingUtilities.invokeLater(() ->
-					gui.updateState(env));
+				log.info("next event");
+				Event e = getNextEvent();
+				e.action.run();
 			}
-			catch (Exception e)
+			catch (Exception exc)
 			{
-				log.error("Error within loop", e);
+				// clear interrupt state just in case
+				Thread.interrupted();
+				log.error("Error within loop", exc);
+			}
+		}
+	}
+	
+	private synchronized Event getNextEvent() throws InterruptedException
+	{
+		while(true)
+		{
+			Event e = actions.peek();
+			
+			if(e == null)
+			{
+				this.wait();
+			}
+			else
+			{
+				long delta = e.due() - System.currentTimeMillis();
+				if(delta <= 0)
+				{
+					return actions.take();
+				}
+				else
+				{
+					this.wait(delta);
+				}
+			}
+		}
+	}
+
+	private void checkSensors()
+	{
+		try
+		{
+			Environment env = Environment.getDefault();
+			
+			env.pullSensors();
+			
+			if(!env.isHandMode())
+			{
+				Level lvl = controller.check(env);
+				
+				if(lvl != env.getLastLevel())
+				{
+					env.setLastLevel(lvl);
+					env.getVentilation().setLevel(lvl, env);
+				}
 			}
 			
-			try
-			{
-				Thread.sleep(60 * 1000);
-			}
-			catch (InterruptedException e)
-			{
-				log.trace("Thread interrupted, start loop early");
-				Thread.interrupted();
-			}
+			SwingUtilities.invokeLater(() ->
+				gui.updateState(env));
+		}
+		finally
+		{
+			addEvent(new Event(System.currentTimeMillis() + (60 * 1000), this::checkSensors));
+		}
+	}
+	
+	@Override
+	public void execute(Runnable command)
+	{
+		addEvent(new Event(System.currentTimeMillis(), command));
+	}
+	
+	private synchronized void addEvent(Event e)
+	{
+		actions.add(e);
+		this.notify();
+	}
+	
+	private static record Event(long due, Runnable action) implements Comparable<Event>
+	{
+		@Override
+		public int compareTo(Event o)
+		{
+			return Long.compare(due, o.due);
 		}
 	}
 }

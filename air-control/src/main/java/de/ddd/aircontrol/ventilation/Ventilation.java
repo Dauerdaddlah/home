@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import de.ddd.aircontrol.Environment;
 import de.ddd.aircontrol.pi.Pi;
 import de.ddd.aircontrol.pi.PiPinDigitalInput;
 import de.ddd.aircontrol.pi.PiPinDigitalOutput;
@@ -11,14 +12,10 @@ import de.ddd.aircontrol.pi.PinMode;
 
 public class Ventilation
 {
-	private final Pi pi;
 	private final EnumMap<Level, Configuration> configurations;
 	private final EnumMap<Level, Configuration> bridgeConfigurations;
 	private final int bridgeModeGpioPin;
 	private final boolean bridgeModeInvert;
-	
-	private Level level;
-	private Level bridgeLevel;
 	
 	public Ventilation(Pi pi,
 			EnumMap<Level, Configuration> configurations,
@@ -26,7 +23,6 @@ public class Ventilation
 			int bridgeModeGpioPin,
 			boolean bridgeModeInvert)
 	{
-		this.pi = pi;
 		this.configurations = configurations;
 		this.bridgeConfigurations = bridgeConfigurations;
 		this.bridgeModeGpioPin = bridgeModeGpioPin;
@@ -40,7 +36,7 @@ public class Ventilation
 			
 			if(config == null)
 			{
-				throw new IllegalArgumentException("missing configuration for Level " + level);
+				throw new IllegalArgumentException("missing configuration for Level " + l);
 			}
 			
 			for(int gpioPin : config.activeGpioPins)
@@ -63,7 +59,7 @@ public class Ventilation
 			
 			if(bridgeConfig == null)
 			{
-				throw new IllegalArgumentException("missing bridgeconfiguration for Level " + level);
+				throw new IllegalArgumentException("missing bridgeconfiguration for Level " + l);
 			}
 			
 			for(int gpioPin : bridgeConfig.activeGpioPins)
@@ -89,64 +85,44 @@ public class Ventilation
 		}
 	}
 	
-	public Level getLevel()
+	public void setLevel(Level level, Environment env)
 	{
-		return level;
-	}
-	
-	public void setLevel(Level level)
-	{
-		if(this.level != level)
+		Configuration config = configurations.get(level);
+		
+		for(int active : config.activeGpioPins)
 		{
-			this.level = level;
-			
-			Configuration config = configurations.get(level);
-			
-			for(int active : config.activeGpioPins)
-			{
-				pi.<PiPinDigitalOutput>getPin(active).setDigitalValue(true);
-			}
-			
-			for(int inactive : config.inactiveGpioPins)
-			{
-				pi.<PiPinDigitalOutput>getPin(inactive).setDigitalValue(false);
-			}
+			env.getPi().<PiPinDigitalOutput>getPin(active).setDigitalValue(true);
+		}
+		
+		for(int inactive : config.inactiveGpioPins)
+		{
+			env.getPi().<PiPinDigitalOutput>getPin(inactive).setDigitalValue(false);
 		}
 	}
 	
-	public Level getBridgeLevel()
+	public void setBridgeLevel(Level bridgeLevel, Environment env)
 	{
-		return bridgeLevel;
-	}
-	
-	public void setBridgeLevel(Level bridgeLevel)
-	{
-		if(this.bridgeLevel != bridgeLevel)
+		Configuration config = bridgeConfigurations.get(bridgeLevel);
+		
+		for(int active : config.activeGpioPins)
 		{
-			this.bridgeLevel = bridgeLevel;
-			
-			Configuration config = bridgeConfigurations.get(bridgeLevel);
-			
-			for(int active : config.activeGpioPins)
-			{
-				pi.<PiPinDigitalOutput>getPin(active).setDigitalValue(true);
-			}
-			
-			for(int inactive : config.inactiveGpioPins)
-			{
-				pi.<PiPinDigitalOutput>getPin(inactive).setDigitalValue(false);
-			}
+			env.getPi().<PiPinDigitalOutput>getPin(active).setDigitalValue(true);
+		}
+		
+		for(int inactive : config.inactiveGpioPins)
+		{
+			env.getPi().<PiPinDigitalOutput>getPin(inactive).setDigitalValue(false);
 		}
 	}
 	
-	public VentilationMode getVentilationMode()
+	public VentilationMode getVentilationMode(Environment env)
 	{
 		if(bridgeModeGpioPin == -1)
 		{
 			return VentilationMode.UNKNOWN;
 		}
 		
-		boolean state = pi.<PiPinDigitalInput>getPin(bridgeModeGpioPin).getDigitalValue();
+		boolean state = env.getPi().<PiPinDigitalInput>getPin(bridgeModeGpioPin).getDigitalValue();
 		
 		if(bridgeModeInvert)
 		{

@@ -2,6 +2,7 @@ package de.ddd.aircontrol;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,12 +12,25 @@ import de.ddd.aircontrol.pi.Pi;
 import de.ddd.aircontrol.sensor.Sensor;
 import de.ddd.aircontrol.sensor.SensorResult;
 import de.ddd.aircontrol.settings.Settings;
+import de.ddd.aircontrol.ventilation.Level;
 import de.ddd.aircontrol.ventilation.Ventilation;
 
 public class Environment
 {
 	private static final Logger log = LoggerFactory.getLogger(Environment.class);
 	
+	private static volatile Environment def;
+	
+	public static Environment getDefault()
+	{
+		return def;
+	}
+	
+	public static void setDefault(Environment env)
+	{
+		def = env;
+	}
+
 	public static final String SENSOR_BATH = "bath";
 	
 	private final Ventilation ventilation;
@@ -24,11 +38,15 @@ public class Environment
 	private final Settings settings;
 	private final Pi pi;
 	private final DataLogger logger;
+	private final Executor changeExecutor;
 	
 	private final Map<String, SensorResult> lastResults;
+	private volatile boolean handMode;
+	private volatile Level lastLevel;
+	private volatile Level lastBridgeLevel;
 	
 	public Environment(Ventilation ventilation, Map<String, Sensor> sensors, Settings settings, Pi pi,
-			DataLogger logger)
+			DataLogger logger, Executor changeExecutor)
 	{
 		super();
 		this.ventilation = ventilation;
@@ -36,8 +54,12 @@ public class Environment
 		this.settings = settings;
 		this.pi = pi;
 		this.logger = logger;
+		this.changeExecutor = changeExecutor;
 		
 		lastResults = new HashMap<>();
+		handMode = false;
+		lastLevel = Level.DEFAULT;
+		lastBridgeLevel = Level.DEFAULT;
 	}
 	
 	public void pullSensors()
@@ -102,5 +124,40 @@ public class Environment
 	public SensorResult getLastResult(String key)
 	{
 		return lastResults.get(key);
+	}
+	
+	public boolean isHandMode()
+	{
+		return handMode;
+	}
+	
+	public void setHandMode(boolean handMode)
+	{
+		this.handMode = handMode;
+	}
+	
+	public Level getLastLevel()
+	{
+		return lastLevel;
+	}
+	
+	public void setLastLevel(Level lastLevel)
+	{
+		this.lastLevel = lastLevel;
+	}
+	
+	public Level getLastBridgeLevel()
+	{
+		return lastBridgeLevel;
+	}
+	
+	public void setLastBridgeLevel(Level lastBridgeLevel)
+	{
+		this.lastBridgeLevel = lastBridgeLevel;
+	}
+	
+	public Executor getChangeExecutor()
+	{
+		return changeExecutor;
 	}
 }

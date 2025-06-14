@@ -20,13 +20,15 @@ import de.ddd.aircontrol.gui.gbc.Anchor;
 import de.ddd.aircontrol.gui.gbc.Fill;
 import de.ddd.aircontrol.gui.gbc.GBC;
 import de.ddd.aircontrol.sensor.SensorResult;
+import de.ddd.aircontrol.ventilation.Level;
 
 public class ViewHome extends JPanel implements View
 {
 	private final JLabel lblHumidity;
 	private final JLabel lblTemperature;
 	private final JLabel lblBridge;
-	private JSlider slider;
+	private final JSlider slider;
+	private final JToggleButton tglMode;
 	
 	public ViewHome()
 	{
@@ -54,9 +56,14 @@ public class ViewHome extends JPanel implements View
 		JLabel lblBridgeImg = new JLabel();
 		lblBridgeImg.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.TURN_ON_64)));
 		
-		JToggleButton tglMode = new JToggleButton();
+		tglMode = new JToggleButton();
 		tglMode.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.FINGER_64)));
 		tglMode.setMargin(new Insets(5, 5, 5, 5));
+		tglMode.addItemListener(e ->
+			{
+				Environment.getDefault().setHandMode(tglMode.isSelected());
+				updateState(Environment.getDefault());
+			});
 		
 		slider = new JSlider(JSlider.HORIZONTAL, -1, 3, -1);
 		slider.setSnapToTicks(true);
@@ -64,12 +71,22 @@ public class ViewHome extends JPanel implements View
 		slider.setMajorTickSpacing(1);
 		slider.setPaintLabels(true);
 		Dictionary<Integer, JComponent> levelLabelTable = new Hashtable<>();
-		levelLabelTable.put(-1, new JLabel("Standard"));
-		levelLabelTable.put(0, new JLabel("Aus"));
-		levelLabelTable.put(1, new JLabel("1"));
-		levelLabelTable.put(2, new JLabel("2"));
-		levelLabelTable.put(3, new JLabel("3"));
+		levelLabelTable.put(levelToInt(Level.DEFAULT), new JLabel("Standard"));
+		levelLabelTable.put(levelToInt(Level.OFF), new JLabel("Aus"));
+		levelLabelTable.put(levelToInt(Level.ONE), new JLabel("1"));
+		levelLabelTable.put(levelToInt(Level.TWO), new JLabel("2"));
+		levelLabelTable.put(levelToInt(Level.THREE), new JLabel("3"));
 		slider.setLabelTable(levelLabelTable);
+		slider.addChangeListener(e ->
+			{
+				if(Environment.getDefault().isHandMode() && !slider.getValueIsAdjusting())
+				{
+					Level lvl = intToLevel(slider.getValue());
+					
+					Environment.getDefault().getChangeExecutor().execute(
+							() -> Environment.getDefault().getVentilation().setLevel(lvl, Environment.getDefault()));
+				}
+			});
 		
 		int row = 0;
 		
@@ -157,7 +174,7 @@ public class ViewHome extends JPanel implements View
 			lblTemperature.setText((int)result.temperature() + "°");
 		}
 		
-		switch(env.getVentilation().getVentilationMode())
+		switch(env.getVentilation().getVentilationMode(env))
 		{
 			case BRIDGE ->
 			{
@@ -173,14 +190,33 @@ public class ViewHome extends JPanel implements View
 			}
 		}
 		
-		switch(env.getVentilation().getLevel())
-		{
-			case DEFAULT -> slider.setValue(-1);
-			case OFF -> slider.setValue(0);
-			case ONE -> slider.setValue(1);
-			case TWO -> slider.setValue(2);
-			case THREE -> slider.setValue(3);
-		}
-		slider.setValue(UNDEFINED_CONDITION);
+		slider.setValue(levelToInt(env.getLastLevel()));
+		slider.setEnabled(env.isHandMode());
+		
+		tglMode.setSelected(env.isHandMode());
+	}
+	
+	private Level intToLevel(int i)
+	{
+		return switch(i)
+			{
+				case -1 -> Level.DEFAULT;
+				default -> Level.OFF;
+				case 1 -> Level.ONE;
+				case 2 -> Level.TWO;
+				case 3 -> Level.THREE;
+			};
+	}
+	
+	private int levelToInt(Level lvl)
+	{
+		return switch(lvl)
+			{
+				case DEFAULT -> -1;
+				default -> 0;
+				case ONE -> 1;
+				case TWO -> 2;
+				case THREE -> 3;
+			};
 	}
 }

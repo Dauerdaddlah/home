@@ -31,7 +31,7 @@ public class ControllerSimple implements Controller
 	}
 	
 	@Override
-	public void check(Environment env)
+	public Level check(Environment env)
 	{
 		log.info("check new level for ventilation");
 		
@@ -40,16 +40,16 @@ public class ControllerSimple implements Controller
 		if(!res.hasHumidity())
 		{
 			log.debug("no bath data to process, abort");
-			return;
+			return env.getLastLevel();
 		}
 		
 		int h = (int)res.humidity();
 		
 		final Level lvl;
 		
-		log.trace("current level {}, humidity {}", env.getVentilation().getLevel(), h);
+		log.trace("current level {}, humidity {}", env.getLastLevel(), h);
 		
-		switch(env.getVentilation().getLevel())
+		switch(env.getLastLevel())
 		{
 			default ->
 			{
@@ -130,7 +130,7 @@ public class ControllerSimple implements Controller
 		}
 		
 		log.debug("switch ventilation to level {}", lvl);
-		env.getVentilation().setLevel(lvl);
+		return lvl;
 	}
 	
 	public int getStart1()
@@ -138,7 +138,7 @@ public class ControllerSimple implements Controller
 		return start1;
 	}
 	
-	public void setStart1(int start1)
+	public synchronized void setStart1(int start1)
 	{
 		ensureIntegrity(start1, start2, start3, end1, end2, end3);
 		
@@ -150,7 +150,7 @@ public class ControllerSimple implements Controller
 		return start2;
 	}
 	
-	public void setStart2(int start2)
+	public synchronized void setStart2(int start2)
 	{
 		ensureIntegrity(start1, start2, start3, end1, end2, end3);
 		
@@ -162,7 +162,7 @@ public class ControllerSimple implements Controller
 		return start3;
 	}
 	
-	public void setStart3(int start3)
+	public synchronized void setStart3(int start3)
 	{
 		ensureIntegrity(start1, start2, start3, end1, end2, end3);
 		
@@ -174,7 +174,7 @@ public class ControllerSimple implements Controller
 		return end1;
 	}
 	
-	public void setEnd1(int end1)
+	public synchronized void setEnd1(int end1)
 	{
 		ensureIntegrity(start1, start2, start3, end1, end2, end3);
 		
@@ -186,7 +186,7 @@ public class ControllerSimple implements Controller
 		return end2;
 	}
 	
-	public void setEnd2(int end2)
+	public synchronized void setEnd2(int end2)
 	{
 		ensureIntegrity(start1, start2, start3, end1, end2, end3);
 		
@@ -198,7 +198,7 @@ public class ControllerSimple implements Controller
 		return end3;
 	}
 	
-	public void setEnd3(int end3)
+	public synchronized void setEnd3(int end3)
 	{
 		ensureIntegrity(start1, start2, start3, end1, end2, end3);
 		
