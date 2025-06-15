@@ -15,7 +15,7 @@ public class RaspberryPi implements Pi
 	private final Model model;
 	private final Context pi4j;
 	
-	private final Map<Integer, PiPin> pinCache;
+	private final Map<Integer, Pin> pinCache;
 	
 	public RaspberryPi(Model model)
 	{
@@ -24,33 +24,52 @@ public class RaspberryPi implements Pi
 		pinCache = new ConcurrentHashMap<>();
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
-	public <P extends PiPin> P configure(int gpioPin, PinMode mode) throws IllegalArgumentException
+	public int getAnalogValue(int gpioPin)
 	{
-		if(model.toPin(gpioPin) == -1)
-		{
-			throw new IllegalArgumentException("invalid gpio-pin " + gpioPin);
-		}
-		
-		PiPin pin = pinCache.computeIfAbsent(gpioPin, p -> new Pin(gpioPin, mode));
+		return configureInt(gpioPin, PinMode.ANALOG_IN).getAnalogValue();
+	}
+	
+	@Override
+	public void setAnalogValue(int gpioPin, int value)
+	{
+		configureInt(gpioPin, PinMode.ANALOG_OUT).setAnalogValue(value);
+	}
+	
+	@Override
+	public boolean getDigitalValue(int gpioPin)
+	{
+		return configureInt(gpioPin, PinMode.DIGITAL_IN).getDigitalValue();
+	}
+	
+	@Override
+	public void setDigitalValue(int gpioPin, boolean value)
+	{
+		configureInt(gpioPin, PinMode.DIGITAL_OUT).setDigitalValue(value);
+	}
+	
+	@Override
+	public void configure(int gpioPin, PinMode mode) throws IllegalArgumentException
+	{
+		Pin pin = configureInt(gpioPin, mode);
 		
 		if(pin.getPinMode() != mode)
 		{
 			throw new IllegalArgumentException("gpiopin " + gpioPin + " cannot be configured as " + mode
 					+ " it is already a " + pin.getPinMode());
 		}
-		
-		return (P)pin;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <P extends PiPin> P getPin(int gpioPin) throws IllegalArgumentException
-	{
-		return (P)pinCache.get(gpioPin);
 	}
 	
+	private Pin configureInt(int gpioPin, PinMode mode) throws IllegalArgumentException
+	{
+		if(model.toPin(gpioPin) == -1)
+		{
+			throw new IllegalArgumentException("invalid gpio-pin " + gpioPin);
+		}
+		
+		return pinCache.computeIfAbsent(gpioPin, p -> new Pin(gpioPin, mode));
+	}
+
 	private class Pin implements PiPinAnalogInput, PiPinAnalogOutput, PiPinDigitalInput, PiPinDigitalOutput
 	{
 		private final PinMode mode;

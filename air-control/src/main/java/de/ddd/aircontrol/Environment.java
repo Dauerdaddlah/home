@@ -2,7 +2,6 @@ package de.ddd.aircontrol;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,26 +19,20 @@ public class Environment
 {
 	private static final Logger log = LoggerFactory.getLogger(Environment.class);
 	
-	private static volatile Environment def;
-	
-	public static Environment getDefault()
-	{
-		return def;
-	}
-	
-	public static void setDefault(Environment env)
-	{
-		def = env;
-	}
-
 	public static final String SENSOR_BATH = "bath";
-	
+//	public static final String KEY_VENTILATION = "ventilation";
+//	public static final String KEY_SENSOR = "sensor.";
+//	public static final String KEY_SETTINGS = "settings";
+//	public static final String KEY_PI = "pi";
+//	public static final String KEY_DATALOGGER = "datalogger";
+//	public static final String KEY_CONTROLLER = "controller";
+//	
+//	private final Map<String, ?> values;
 	private final Ventilation ventilation;
 	private final Map<String, Sensor> sensors;
 	private final Settings settings;
 	private final Pi pi;
 	private final DataLogger logger;
-	private final Executor changeExecutor;
 	private final Controller controller;
 	
 	private final Map<String, SensorResult> lastResults;
@@ -49,15 +42,16 @@ public class Environment
 	private volatile boolean simulation;
 	
 	public Environment(Ventilation ventilation, Map<String, Sensor> sensors, Settings settings, Pi pi,
-			DataLogger logger, Executor changeExecutor, Controller controller)
+			DataLogger logger, Controller controller)
 	{
 		super();
+		
+		
 		this.ventilation = ventilation;
 		this.sensors = sensors;
 		this.settings = settings;
 		this.pi = pi;
 		this.logger = logger;
-		this.changeExecutor = changeExecutor;
 		this.controller = controller;
 		
 		lastResults = new HashMap<>();
@@ -159,11 +153,6 @@ public class Environment
 	public void setLastBridgeLevel(Level lastBridgeLevel)
 	{
 		this.lastBridgeLevel = lastBridgeLevel;
-	}
-	
-	public Executor getChangeExecutor()
-	{
-		return changeExecutor;
 	}
 	
 	public boolean isSimulation()

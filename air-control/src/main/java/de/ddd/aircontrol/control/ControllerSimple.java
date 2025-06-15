@@ -11,12 +11,12 @@ public class ControllerSimple implements Controller
 {
 	private static final Logger log = LoggerFactory.getLogger(ControllerSimple.class);
 	
-	private int start1;
-	private int start2;
-	private int start3;
-	private int end1;
-	private int end2;
-	private int end3;
+	private volatile int start1;
+	private volatile int start2;
+	private volatile int start3;
+	private volatile int end1;
+	private volatile int end2;
+	private volatile int end3;
 	
 	public ControllerSimple(int start1, int start2, int start3, int end1, int end2, int end3)
 	{

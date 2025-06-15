@@ -7,6 +7,7 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 
 import de.ddd.aircontrol.Environment;
+import de.ddd.aircontrol.gui.Gui;
 import de.ddd.aircontrol.gui.GuiResources;
 import de.ddd.aircontrol.gui.gbc.GBC;
 
@@ -14,7 +15,7 @@ public class ViewSim extends JPanel implements View
 {
 	private final JToggleButton tglSim;
 	
-	public ViewSim()
+	public ViewSim(Gui gui)
 	{
 		tglSim = new JToggleButton();
 		tglSim.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.SWITCH_OFF_64)));
@@ -29,8 +30,10 @@ public class ViewSim extends JPanel implements View
 					tglSim.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.SWITCH_OFF_64)));
 				}
 				
-				Environment.getDefault().getChangeExecutor().execute(() ->
-						Environment.getDefault().setSimulation(tglSim.isSelected()));
+				boolean selected = tglSim.isSelected();
+				
+				gui.changeData(env ->
+						env.setSimulation(selected));
 			});
 		
 		setLayout(new GridBagLayout());

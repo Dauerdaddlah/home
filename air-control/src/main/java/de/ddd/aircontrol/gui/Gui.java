@@ -9,6 +9,7 @@ import java.awt.Insets;
 import java.awt.event.ItemEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -37,6 +38,8 @@ public class Gui
 	public static final String VIEW_SETTINGS = "settings";
 	public static final String VIEW_SIM = "sim";
 	
+	private final Consumer<Consumer<Environment>> executor;
+	
 	private final JFrame frame;
 	
 	private CardLayout cardView;
@@ -49,8 +52,9 @@ public class Gui
 	
 	private List<View> views;
 	
-	public Gui()
+	public Gui(Consumer<Consumer<Environment>> executor)
 	{
+		this.executor = executor;
 		viewButtons = new ArrayList<>();
 		views = new ArrayList<>();
 		
@@ -106,9 +110,9 @@ public class Gui
 		pnlView = new JPanel();
 		pnlView.setLayout(cardView);
 		
-		JPanel pnlViewHome = new ViewHome();
-		JPanel pnlViewSettings = new ViewSettings();
-		JPanel pnlViewSim = new ViewSim();
+		JPanel pnlViewHome = new ViewHome(this);
+		JPanel pnlViewSettings = new ViewSettings(this);
+		JPanel pnlViewSim = new ViewSim(this);
 		
 		views.add((View)pnlViewHome);
 		views.add((View)pnlViewSettings);
@@ -188,5 +192,10 @@ public class Gui
 		{
 			t.setSelected(t.getClientProperty(CLIENT_PROPERTY_VIEW) == currentView);
 		}
+	}
+	
+	public void changeData(Consumer<Environment> action)
+	{
+		executor.accept(action);
 	}
 }

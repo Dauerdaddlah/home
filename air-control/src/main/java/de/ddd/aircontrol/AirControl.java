@@ -8,9 +8,9 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import javax.swing.SwingUtilities;
 
@@ -35,7 +35,7 @@ import de.ddd.aircontrol.ventilation.Level;
 import de.ddd.aircontrol.ventilation.Ventilation;
 import de.ddd.aircontrol.ventilation.Ventilation.Configuration;
 
-public class AirControl implements Executor
+public class AirControl implements Consumer<Consumer<Environment>>
 {
 	private static final Logger log = LoggerFactory.getLogger(AirControl.class);
 	
@@ -102,6 +102,8 @@ public class AirControl implements Executor
 	private final Gui gui;
 	
 	private final PriorityBlockingQueue<Event> actions;
+	
+	private final Environment env;
 	
 	public AirControl()
 	{
@@ -173,7 +175,7 @@ public class AirControl implements Executor
 		{
 			SwingUtilities.invokeAndWait(() ->
 				{
-					refGui.set(new Gui());
+					refGui.set(new Gui(this));
 				});
 		}
 		catch (InvocationTargetException | InterruptedException e)
@@ -203,8 +205,7 @@ public class AirControl implements Executor
 			}
 		}
 		
-		Environment env = new Environment(ventilation, sensors, settings, pi, dataLogger, this, controller);
-		Environment.setDefault(env);
+		env = new Environment(ventilation, sensors, settings, pi, dataLogger, controller);
 	}
 
 	private EnumMap<Level, Configuration> getConfigurations(Settings settings, String type)
@@ -262,10 +263,10 @@ public class AirControl implements Executor
 			{
 				log.info("next event");
 				Event e = getNextEvent();
-				e.action.run();
+				e.action.accept(env);
 				
-				SwingUtilities.invokeLater(() ->
-					gui.updateState(Environment.getDefault()));
+				SwingUtilities.invokeAndWait(() ->
+					gui.updateState(env));
 			}
 			catch (Exception exc)
 			{
@@ -301,12 +302,10 @@ public class AirControl implements Executor
 		}
 	}
 
-	private void checkSensors()
+	private void checkSensors(Environment env)
 	{
 		try
 		{
-			Environment env = Environment.getDefault();
-			
 			env.pullSensors();
 			
 			if(!env.isHandMode())
@@ -327,9 +326,9 @@ public class AirControl implements Executor
 	}
 	
 	@Override
-	public void execute(Runnable command)
+	public void accept(Consumer<Environment> action)
 	{
-		addEvent(new Event(System.currentTimeMillis(), command));
+		addEvent(new Event(System.currentTimeMillis(), action));
 	}
 	
 	private synchronized void addEvent(Event e)
@@ -338,7 +337,7 @@ public class AirControl implements Executor
 		this.notify();
 	}
 	
-	private static record Event(long due, Runnable action) implements Comparable<Event>
+	private static record Event(long due, Consumer<Environment> action) implements Comparable<Event>
 	{
 		@Override
 		public int compareTo(Event o)

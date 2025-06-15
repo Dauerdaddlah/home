@@ -11,34 +11,52 @@ public class SimPi implements Pi
 //		this.model = model;
 		pins = new SimPin[model.getNumPins()];
 	}
-
-	@SuppressWarnings("unchecked")
+	
 	@Override
-	public <P extends PiPin> P configure(int gpioPin, PinMode mode) throws IllegalArgumentException
+	public boolean getDigitalValue(int gpioPin)
 	{
-		SimPin p = pins[gpioPin];
-		
-		if(p == null)
-		{
-			p = new SimPin(gpioPin, mode);
-			pins[gpioPin] = p;
-		}
+		return getPin(gpioPin, PinMode.DIGITAL_IN).getDigitalValue();
+	}
+	
+	@Override
+	public void setDigitalValue(int gpioPin, boolean value)
+	{
+		getPin(gpioPin, PinMode.DIGITAL_OUT).getDigitalValue();
+	}
+	
+	@Override
+	public int getAnalogValue(int gpioPin)
+	{
+		return getPin(gpioPin, PinMode.ANALOG_IN).getAnalogValue();
+	}
+	
+	@Override
+	public void setAnalogValue(int gpioPin, int value)
+	{
+		getPin(gpioPin, PinMode.ANALOG_OUT).setAnalogValue(value);
+	}
+
+	@Override
+	public void configure(int gpioPin, PinMode mode) throws IllegalArgumentException
+	{
+		SimPin p = getPin(gpioPin, mode);
 		
 		if(p.getPinMode() != mode)
 		{
 			throw new IllegalArgumentException();
 		}
-		
-		return (P)p;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <P extends PiPin> P getPin(int gpioPin) throws IllegalArgumentException
-	{
-		return (P)pins[gpioPin];
 	}
 	
+	private SimPin getPin(int gpioPin, PinMode mode)
+	{
+		if(pins[gpioPin] == null)
+		{
+			pins[gpioPin] = new SimPin(gpioPin, mode);
+		}
+		
+		return pins[gpioPin];
+	}
+
 	private static class SimPin implements PiPinDigitalInput, PiPinDigitalOutput, PiPinAnalogOutput, PiPinAnalogInput
 	{
 //		private final int gpioPin;

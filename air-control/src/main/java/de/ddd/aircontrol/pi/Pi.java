@@ -2,7 +2,11 @@ package de.ddd.aircontrol.pi;
 
 public interface Pi
 {
-	public <P extends PiPin> P configure(int gpioPin, PinMode mode) throws IllegalArgumentException;
+	public int getAnalogValue(int gpioPin);
+	public void setAnalogValue(int gpioPin, int value);
 	
-	public <P extends PiPin> P getPin(int gpioPin) throws IllegalArgumentException;
+	public boolean getDigitalValue(int gpioPin);
+	public void setDigitalValue(int gpioPin, boolean value);
+	
+	public void configure(int gpioPin, PinMode mode) throws IllegalArgumentException;
 }

@@ -15,6 +15,7 @@ import javax.swing.JSlider;
 import javax.swing.JToggleButton;
 
 import de.ddd.aircontrol.Environment;
+import de.ddd.aircontrol.gui.Gui;
 import de.ddd.aircontrol.gui.GuiResources;
 import de.ddd.aircontrol.gui.gbc.Anchor;
 import de.ddd.aircontrol.gui.gbc.Fill;
@@ -24,14 +25,18 @@ import de.ddd.aircontrol.ventilation.Level;
 
 public class ViewHome extends JPanel implements View
 {
+//	private final Gui gui;
+	
 	private final JLabel lblHumidity;
 	private final JLabel lblTemperature;
 	private final JLabel lblBridge;
 	private final JSlider slider;
 	private final JToggleButton tglMode;
 	
-	public ViewHome()
+	public ViewHome(Gui gui)
 	{
+//		this.gui = gui;
+		
 		JPanel content = this;
 		
 		content.setLayout(new GridBagLayout());
@@ -61,7 +66,10 @@ public class ViewHome extends JPanel implements View
 		tglMode.setMargin(new Insets(5, 5, 5, 5));
 		tglMode.addItemListener(e ->
 			{
-				Environment.getDefault().setHandMode(tglMode.isSelected());
+				boolean handmode = tglMode.isSelected();
+				
+				gui.changeData(env ->
+						env.setHandMode(handmode));
 			});
 		
 		slider = new JSlider(JSlider.HORIZONTAL, -1, 3, -1);
@@ -78,12 +86,17 @@ public class ViewHome extends JPanel implements View
 		slider.setLabelTable(levelLabelTable);
 		slider.addChangeListener(e ->
 			{
-				if(Environment.getDefault().isHandMode() && !slider.getValueIsAdjusting())
+				if(!slider.getValueIsAdjusting())
 				{
 					Level lvl = intToLevel(slider.getValue());
 					
-					Environment.getDefault().getChangeExecutor().execute(
-							() -> Environment.getDefault().getVentilation().setLevel(lvl, Environment.getDefault()));
+					gui.changeData(env ->
+						{
+							if(env.isHandMode())
+							{
+								env.getVentilation().setLevel(lvl, env);
+							}
+						});
 				}
 			});
 		

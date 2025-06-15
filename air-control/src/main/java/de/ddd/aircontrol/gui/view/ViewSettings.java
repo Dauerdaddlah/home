@@ -8,10 +8,13 @@ import javax.swing.JPanel;
 
 import de.ddd.aircontrol.Environment;
 import de.ddd.aircontrol.control.ControllerSimple;
+import de.ddd.aircontrol.gui.Gui;
 import de.ddd.aircontrol.gui.gbc.GBC;
 
 public class ViewSettings extends JPanel implements View
 {
+	private final Gui gui;
+	
 	private final JLabel lblStart1;
 	private final JLabel lblStart2;
 	private final JLabel lblStart3;
@@ -19,8 +22,10 @@ public class ViewSettings extends JPanel implements View
 	private final JLabel lblEnd2;
 	private final JLabel lblEnd3;
 	
-	public ViewSettings()
+	public ViewSettings(Gui gui)
 	{
+		this.gui = gui;
+		
 		JButton btnLeftStart1 = new JButton("<-");
 		btnLeftStart1.addActionListener(e -> adjust(-1, 0, 0, 0, 0, 0));
 		JButton btnLeftStart2 = new JButton("<-");
@@ -101,16 +106,16 @@ public class ViewSettings extends JPanel implements View
 				&& start1 >= 0 && start2 >= 0 && start3 >= 0 && end1 >= 0 && end2 >= 0 && end3 >= 0
 				&& start1 <= 100 && start2 <= 100 && start3 <= 100 && end1 <= 100 && end2 <= 100 && end3 <= 100)
 		{
-			Environment.getDefault().getChangeExecutor().execute(() ->
-					{
-						ControllerSimple cs = (ControllerSimple)Environment.getDefault().getController();
-						cs.setStart1(start1);
-						cs.setStart2(start2);
-						cs.setStart3(start3);
-						cs.setEnd1(end1);
-						cs.setEnd2(end2);
-						cs.setEnd3(end3);
-					});
+			gui.changeData(env ->
+				{
+					ControllerSimple cs = (ControllerSimple)env.getController();
+					cs.setStart1(start1);
+					cs.setStart2(start2);
+					cs.setStart3(start3);
+					cs.setEnd1(end1);
+					cs.setEnd2(end2);
+					cs.setEnd3(end3);
+				});
 		}
 	}
 
