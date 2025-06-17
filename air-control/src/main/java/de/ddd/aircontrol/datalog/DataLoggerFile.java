@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class DataLoggerFile implements DataLogger
 {
@@ -16,7 +18,9 @@ public class DataLoggerFile implements DataLogger
 	public DataLoggerFile(Path file)
 	{
 		this.file = file;
-		this.gson = new Gson();
+		this.gson = new GsonBuilder()
+				.serializeSpecialFloatingPointValues()
+				.create();
 	}
 	
 	@Override
@@ -27,7 +31,7 @@ public class DataLoggerFile implements DataLogger
 		try
 		{
 			Files.write(file,
-					List.of(System.currentTimeMillis() + " - " + type + ":" + val),
+					List.of(LocalDateTime.now() + " - " + type + ":" + val),
 					StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
 		}
 		catch (IOException e)

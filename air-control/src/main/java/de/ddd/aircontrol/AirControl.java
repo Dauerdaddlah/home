@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import javax.swing.SwingUtilities;
 
@@ -21,6 +20,9 @@ import de.ddd.aircontrol.control.Controller;
 import de.ddd.aircontrol.control.ControllerSimple;
 import de.ddd.aircontrol.datalog.DataLogger;
 import de.ddd.aircontrol.datalog.DataLoggerFile;
+import de.ddd.aircontrol.event.Event;
+import de.ddd.aircontrol.event.EventAction;
+import de.ddd.aircontrol.event.EventQueue;
 import de.ddd.aircontrol.gui.Gui;
 import de.ddd.aircontrol.pi.Model;
 import de.ddd.aircontrol.pi.Pi;
@@ -35,7 +37,7 @@ import de.ddd.aircontrol.ventilation.Level;
 import de.ddd.aircontrol.ventilation.Ventilation;
 import de.ddd.aircontrol.ventilation.Ventilation.Configuration;
 
-public class AirControl implements Consumer<Consumer<Environment>>
+public class AirControl implements EventQueue, EventAction
 {
 	private static final Logger log = LoggerFactory.getLogger(AirControl.class);
 	
@@ -205,7 +207,7 @@ public class AirControl implements Consumer<Consumer<Environment>>
 			}
 		}
 		
-		env = new Environment(ventilation, sensors, settings, pi, dataLogger, controller);
+		env = new Environment(ventilation, sensors, settings, pi, dataLogger, controller, this, this);
 	}
 
 	private EnumMap<Level, Configuration> getConfigurations(Settings settings, String type)
@@ -255,7 +257,7 @@ public class AirControl implements Consumer<Consumer<Environment>>
 	{
 		log.info("start loop");
 		
-		addEvent(new Event(System.currentTimeMillis(), this::checkSensors));
+		addEvent(new Event(System.currentTimeMillis(), this));
 		
 		while(true)
 		{
@@ -263,7 +265,7 @@ public class AirControl implements Consumer<Consumer<Environment>>
 			{
 				log.info("next event");
 				Event e = getNextEvent();
-				e.action.accept(env);
+				e.action().performAction(env);
 				
 				SwingUtilities.invokeAndWait(() ->
 					gui.updateState(env));
@@ -302,10 +304,20 @@ public class AirControl implements Consumer<Consumer<Environment>>
 		}
 	}
 
-	private void checkSensors(Environment env)
+	@Override
+	public void performAction(Environment env)
 	{
 		try
 		{
+			// avoid multiple check events in the queue (may happen if triggered by gui)
+			for(Event e : actions)
+			{
+				if(e.action() == this)
+				{
+					actions.remove(e);
+				}
+			}
+			
 			env.pullSensors();
 			
 			if(!env.isHandMode())
@@ -321,28 +333,14 @@ public class AirControl implements Consumer<Consumer<Environment>>
 		}
 		finally
 		{
-			addEvent(new Event(System.currentTimeMillis() + (60 * 1000), this::checkSensors));
+			addEvent(new Event(System.currentTimeMillis() + (60 * 1000), this));
 		}
 	}
 	
 	@Override
-	public void accept(Consumer<Environment> action)
-	{
-		addEvent(new Event(System.currentTimeMillis(), action));
-	}
-	
-	private synchronized void addEvent(Event e)
+	public synchronized void addEvent(Event e)
 	{
 		actions.add(e);
 		this.notify();
-	}
-	
-	private static record Event(long due, Consumer<Environment> action) implements Comparable<Event>
-	{
-		@Override
-		public int compareTo(Event o)
-		{
-			return Long.compare(due, o.due);
-		}
 	}
 }

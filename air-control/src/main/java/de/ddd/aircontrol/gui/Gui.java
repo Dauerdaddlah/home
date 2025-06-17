@@ -3,13 +3,14 @@ package de.ddd.aircontrol.gui;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ItemEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -21,6 +22,8 @@ import javax.swing.JToggleButton;
 import javax.swing.UIManager;
 
 import de.ddd.aircontrol.Environment;
+import de.ddd.aircontrol.event.EventAction;
+import de.ddd.aircontrol.event.EventQueue;
 import de.ddd.aircontrol.gui.gbc.Fill;
 import de.ddd.aircontrol.gui.gbc.GBC;
 import de.ddd.aircontrol.gui.view.View;
@@ -38,7 +41,7 @@ public class Gui
 	public static final String VIEW_SETTINGS = "settings";
 	public static final String VIEW_SIM = "sim";
 	
-	private final Consumer<Consumer<Environment>> executor;
+	private final EventQueue executor;
 	
 	private final JFrame frame;
 	
@@ -52,7 +55,7 @@ public class Gui
 	
 	private List<View> views;
 	
-	public Gui(Consumer<Consumer<Environment>> executor)
+	public Gui(EventQueue executor)
 	{
 		this.executor = executor;
 		viewButtons = new ArrayList<>();
@@ -74,6 +77,8 @@ public class Gui
 		zoom.setLayout(new GridBagLayout());
 		zoom.add(content, new GBC().fill(Fill.BOTH));
 		
+		increaseFonts(content);
+		
 		// TODO set undecorated if no sim available
 		frame.setUndecorated(false);
 		frame.pack();
@@ -82,6 +87,21 @@ public class Gui
 		frame.setVisible(true);
 	}
 	
+	private void increaseFonts(Container container)
+	{
+		// increase fonts
+		for(int i = 0; i < container.getComponentCount(); i++)
+		{
+			Component c = container.getComponent(i);
+			c.setFont(c.getFont().deriveFont(20f));
+			
+			if(c instanceof Container cont)
+			{
+				increaseFonts(cont);
+			}
+		}
+	}
+
 	public void updateState(Environment env)
 	{
 		if(env.isSimulation() && zoom.getBorder() == null)
@@ -194,8 +214,39 @@ public class Gui
 		}
 	}
 	
-	public void changeData(Consumer<Environment> action)
+	public void changeData(EventAction action)
 	{
-		executor.accept(action);
+		executor.addAction(action);
+	}
+	
+	@SuppressWarnings("unused")
+	private void showGrid(Component comp)
+	{
+		if(comp instanceof JPanel pnl)
+		{
+			if(pnl.getLayout() instanceof GridBagLayout gbl)
+			{
+//				int rows = 
+//				int cols = 
+//				for(int rrow = 0; r < rows + 1; r++)
+//				{
+//					for(int col = 0; col < cols; col++)
+//					{
+//						JLabel lbl = new JLabel();
+//						lbl.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+//						content.add(lbl,
+//								new GBC(r, col).fill(Fill.BOTH).weight(0, 0));
+//					}
+//				}
+			}
+		}
+		
+		if(comp instanceof Container cont)
+		{
+			for(int i = 0; i < cont.getComponentCount(); i++)
+			{
+				showGrid(cont.getComponent(i));
+			}
+		}
 	}
 }

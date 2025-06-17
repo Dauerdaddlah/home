@@ -2,7 +2,7 @@ package de.ddd.aircontrol.sensor;
 
 public class SimSensor implements Sensor
 {
-	private volatile SensorResult result = new SensorResult(-1, -1);
+	private volatile SensorResult result = new SensorResult(Double.NaN, Double.NaN);
 	private long waitTime = 0;
 	
 	public void setWaitTime(long waitTime)

@@ -2,12 +2,15 @@ package de.ddd.aircontrol;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.ddd.aircontrol.control.Controller;
 import de.ddd.aircontrol.datalog.DataLogger;
+import de.ddd.aircontrol.event.EventAction;
+import de.ddd.aircontrol.event.EventQueue;
 import de.ddd.aircontrol.pi.Pi;
 import de.ddd.aircontrol.sensor.Sensor;
 import de.ddd.aircontrol.sensor.SensorResult;
@@ -27,13 +30,15 @@ public class Environment
 //	public static final String KEY_DATALOGGER = "datalogger";
 //	public static final String KEY_CONTROLLER = "controller";
 //	
-//	private final Map<String, ?> values;
+	private final Map<String, Object> values;
 	private final Ventilation ventilation;
 	private final Map<String, Sensor> sensors;
 	private final Settings settings;
-	private final Pi pi;
+	private volatile Pi pi;
 	private final DataLogger logger;
 	private final Controller controller;
+	private final EventAction updateAction;
+	private final EventQueue eventQueue;
 	
 	private final Map<String, SensorResult> lastResults;
 	private volatile boolean handMode;
@@ -42,10 +47,11 @@ public class Environment
 	private volatile boolean simulation;
 	
 	public Environment(Ventilation ventilation, Map<String, Sensor> sensors, Settings settings, Pi pi,
-			DataLogger logger, Controller controller)
+			DataLogger logger, Controller controller, EventAction updateAction, EventQueue eventQueue)
 	{
 		super();
 		
+		values = new ConcurrentHashMap<>();
 		
 		this.ventilation = ventilation;
 		this.sensors = sensors;
@@ -53,6 +59,8 @@ public class Environment
 		this.pi = pi;
 		this.logger = logger;
 		this.controller = controller;
+		this.updateAction = updateAction;
+		this.eventQueue = eventQueue;
 		
 		lastResults = new HashMap<>();
 		handMode = false;
@@ -98,6 +106,11 @@ public class Environment
 	public Pi getPi()
 	{
 		return pi;
+	}
+	
+	public void setPi(Pi pi)
+	{
+		this.pi = pi;
 	}
 	
 	public Map<String, Sensor> getSensors()
@@ -168,5 +181,26 @@ public class Environment
 	public Controller getController()
 	{
 		return controller;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <T> T getValue(String key)
+	{
+		return (T)values.get(key);
+	}
+	
+	public void putValue(String key, Object value)
+	{
+		values.put(key, value);
+	}
+	
+	public EventAction getUpdateAction()
+	{
+		return updateAction;
+	}
+	
+	public EventQueue getEventQueue()
+	{
+		return eventQueue;
 	}
 }

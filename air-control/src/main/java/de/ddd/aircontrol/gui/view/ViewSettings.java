@@ -63,34 +63,40 @@ public class ViewSettings extends JPanel implements View
 		
 		int row = 0;
 		
-		add(btnLeftStart1, new GBC(row, 0).insets(5));
-		add(lblStart1, new GBC(row, 1).insets(5));
-		add(btnRightStart1, new GBC(row, 2).insets(5));
+		add(new JLabel("Stufe 1 ab "), new GBC(row, 0).insets(5));
+		add(btnLeftStart1, new GBC(row, 1).insets(5));
+		add(lblStart1, new GBC(row, 2).insets(5));
+		add(btnRightStart1, new GBC(row, 3).insets(5));
 		
 		row++;
-		add(btnLeftStart2, new GBC(row, 0).insets(5));
-		add(lblStart2, new GBC(row, 1).insets(5));
-		add(btnRightStart2, new GBC(row, 2).insets(5));
+		add(new JLabel("Stufe 2 ab "), new GBC(row, 0).insets(5));
+		add(btnLeftStart2, new GBC(row, 1).insets(5));
+		add(lblStart2, new GBC(row, 2).insets(5));
+		add(btnRightStart2, new GBC(row, 3).insets(5));
 		
 		row++;
-		add(btnLeftStart3, new GBC(row, 0).insets(5));
-		add(lblStart3, new GBC(row, 1).insets(5));
-		add(btnRightStart3, new GBC(row, 2).insets(5));
+		add(new JLabel("Stufe 3 ab "), new GBC(row, 0));
+		add(btnLeftStart3, new GBC(row, 1).insets(5));
+		add(lblStart3, new GBC(row, 2).insets(5));
+		add(btnRightStart3, new GBC(row, 3).insets(5));
 		
 		row++;
-		add(btnLeftEnd1, new GBC(row, 0).insets(5));
-		add(lblEnd1, new GBC(row, 1).insets(5));
-		add(btnRightEnd1, new GBC(row, 2).insets(5));
+		add(new JLabel("Stufe 1 beenden unter "), new GBC(row, 0).insets(5));
+		add(btnLeftEnd1, new GBC(row, 1).insets(5));
+		add(lblEnd1, new GBC(row, 2).insets(5));
+		add(btnRightEnd1, new GBC(row, 3).insets(5));
 		
 		row++;
-		add(btnLeftEnd2, new GBC(row, 0).insets(5));
-		add(lblEnd2, new GBC(row, 1).insets(5));
-		add(btnRightEnd2, new GBC(row, 2).insets(5));
+		add(new JLabel("Stufe 2 beenden unter "), new GBC(row, 0).insets(5));
+		add(btnLeftEnd2, new GBC(row, 1).insets(5));
+		add(lblEnd2, new GBC(row, 2).insets(5));
+		add(btnRightEnd2, new GBC(row, 3).insets(5));
 		
 		row++;
-		add(btnLeftEnd3, new GBC(row, 0).insets(5));
-		add(lblEnd3, new GBC(row, 1).insets(5));
-		add(btnRightEnd3, new GBC(row, 2).insets(5));
+		add(new JLabel("Stufe 3 beenden unter "), new GBC(row, 0).insets(5));
+		add(btnLeftEnd3, new GBC(row, 1).insets(5));
+		add(lblEnd3, new GBC(row, 2).insets(5));
+		add(btnRightEnd3, new GBC(row, 3).insets(5));
 	}
 
 	private void adjust(int s1, int s2, int s3, int e1, int e2, int e3)

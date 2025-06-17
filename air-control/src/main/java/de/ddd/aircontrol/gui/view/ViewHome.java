@@ -1,9 +1,10 @@
 package de.ddd.aircontrol.gui.view;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -51,6 +52,14 @@ public class ViewHome extends JPanel implements View
 		JLabel lblLevelimg = new JLabel();
 		lblLevelimg.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.FAN_64)));
 		lblLevelimg.setForeground(Color.RED);
+		lblLevelimg.addMouseListener(new MouseAdapter()
+			{
+				@Override
+				public void mousePressed(MouseEvent e)
+				{
+					gui.changeData(env -> env.getEventQueue().addAction(env.getUpdateAction()));
+				}
+			});
 		
 		JLabel lblTemperatureImg = new JLabel();
 		lblTemperatureImg.setIcon(new ImageIcon(GuiResources.getResource(GuiResources.THERMOMETER_64)));
@@ -152,23 +161,6 @@ public class ViewHome extends JPanel implements View
 				new GBC(row, 0).insets(5));
 		content.add(slider,
 				new GBC(row, 1).width(3).fill(Fill.HORIZONTAL).insets(5));
-		
-		for(int i = 0; i < content.getComponentCount(); i++)
-		{
-			Component c = content.getComponent(i);
-			c.setFont(c.getFont().deriveFont(20f));
-		}
-		
-//		for(int r = 0; r < row + 1; r++)
-//		{
-//			for(int col = 0; col < 4; col++)
-//			{
-//				JLabel lbl = new JLabel();
-//				lbl.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
-//				content.add(lbl,
-//						new GBC(r, col).fill(Fill.BOTH).weight(0, 0));
-//			}
-//		}
 	}
 	
 	@Override
