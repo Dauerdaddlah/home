@@ -69,7 +69,10 @@ public class AirControl implements EventQueue, EventAction
 	
 	public static final String SETTING_PI_MODEL = SETTING_PI_PREFIX + "model";
 	
-	public static final String SETTING_DATA_LOG = SETTING_PREFIX + "data.log";
+	public static final String SETTING_DATA_PREFIX = SETTING_PREFIX + "data.";
+	public static final String SETTING_DATA_LOG = SETTING_DATA_PREFIX + "log";
+	public static final String SETTING_DATA_MAXSIZE = SETTING_DATA_PREFIX + "maxsize";
+	public static final String SETTING_DATA_COUNT = SETTING_DATA_PREFIX + "count";
 	
 	public static final String SETTING_SENSOR_PREFIX = SETTING_PREFIX + "sensor.";
 	
@@ -133,7 +136,10 @@ public class AirControl implements EventQueue, EventAction
 		}
 		
 		log.debug("create data logger");
-		DataLogger dataLogger = new DataLoggerFile(Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")));
+		DataLogger dataLogger = new DataLoggerFile(
+				Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")),
+				settings.getLong(SETTING_DATA_MAXSIZE, 1024 * 1024 * 10),
+				settings.getInt(SETTING_DATA_COUNT, 10));
 		
 		log.debug("load sensors");
 		Map<String, Sensor> sensors = new HashMap<>();
