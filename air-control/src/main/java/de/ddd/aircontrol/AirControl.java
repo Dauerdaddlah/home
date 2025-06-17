@@ -322,12 +322,12 @@ public class AirControl implements EventQueue, EventAction
 			
 			if(!env.isHandMode())
 			{
-				Level lvl = env.getController().check(env);
+				Level lvl = env.getController().check(env.getLastLevel(), env.getLastResults());
 				
 				if(lvl != env.getLastLevel())
 				{
 					env.setLastLevel(lvl);
-					env.getVentilation().setLevel(lvl, env);
+					env.getVentilation().setLevel(lvl, env.getPi());
 				}
 			}
 		}

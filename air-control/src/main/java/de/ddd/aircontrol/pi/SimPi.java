@@ -21,7 +21,7 @@ public class SimPi implements Pi
 	@Override
 	public void setDigitalValue(int gpioPin, boolean value)
 	{
-		getPin(gpioPin, PinMode.DIGITAL_OUT).getDigitalValue();
+		getPin(gpioPin, PinMode.DIGITAL_OUT).setDigitalValue(value);
 	}
 	
 	@Override

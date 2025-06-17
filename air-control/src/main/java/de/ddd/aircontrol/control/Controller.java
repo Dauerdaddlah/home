@@ -1,6 +1,8 @@
 package de.ddd.aircontrol.control;
 
-import de.ddd.aircontrol.Environment;
+import java.util.Map;
+
+import de.ddd.aircontrol.sensor.SensorResult;
 import de.ddd.aircontrol.ventilation.Level;
 
 /**
@@ -12,8 +14,9 @@ public interface Controller
 	/**
 	 * check which level should be active next
 	 * 
-	 * @param environment the current state
+	 * @param currentLevel the ventilation level that is currently used
+	 * @param sensorResults all results of all sensors
 	 * @return the next level, the ventilation shall have
 	 */
-	public Level check(Environment environment);
+	public Level check(Level currentLevel, Map<String, SensorResult> sensorResults);
 }

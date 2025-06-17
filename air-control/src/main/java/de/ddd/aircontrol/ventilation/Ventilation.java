@@ -2,7 +2,6 @@ package de.ddd.aircontrol.ventilation;
 
 import java.util.EnumMap;
 
-import de.ddd.aircontrol.Environment;
 import de.ddd.aircontrol.pi.Pi;
 
 public class Ventilation
@@ -41,44 +40,44 @@ public class Ventilation
 		}
 	}
 	
-	public void setLevel(Level level, Environment env)
+	public void setLevel(Level level, Pi pi)
 	{
 		Configuration config = configurations.get(level);
 		
-		configure(config, env);
+		configure(config, pi);
 	}
 	
-	public Level getLevel(Environment env)
+	public Level getLevel(Pi pi)
 	{
-		return getLevel(env, configurations);
+		return getLevel(pi, configurations);
 	}
 	
-	public void setBridgeLevel(Level bridgeLevel, Environment env)
+	public void setBridgeLevel(Level bridgeLevel, Pi pi)
 	{
 		Configuration config = bridgeConfigurations.get(bridgeLevel);
 		
-		configure(config, env);
+		configure(config, pi);
 	}
 	
-	public Level getBridgeLevel(Environment env)
+	public Level getBridgeLevel(Pi pi)
 	{
-		return getLevel(env, bridgeConfigurations);
+		return getLevel(pi, bridgeConfigurations);
 	}
 	
-	private void configure(Configuration config, Environment env)
+	private void configure(Configuration config, Pi pi)
 	{
 		for(int active : config.activeGpioPins)
 		{
-			env.getPi().setDigitalValue(active, true);
+			pi.setDigitalValue(active, true);
 		}
 		
 		for(int inactive : config.inactiveGpioPins)
 		{
-			env.getPi().setDigitalValue(inactive, false);
+			pi.setDigitalValue(inactive, false);
 		}
 	}
 	
-	private Level getLevel(Environment env, EnumMap<Level, Configuration> configurations)
+	private Level getLevel(Pi pi, EnumMap<Level, Configuration> configurations)
 	{
 		lvls:for(Level lvl : configurations.keySet())
 		{
@@ -86,7 +85,7 @@ public class Ventilation
 			
 			for(int active : config.activeGpioPins)
 			{
-				if(!env.getPi().getDigitalValue(active))
+				if(!pi.getDigitalValue(active))
 				{
 					continue lvls;
 				}
@@ -94,7 +93,7 @@ public class Ventilation
 			
 			for(int inactive : config.inactiveGpioPins)
 			{
-				if(env.getPi().getDigitalValue(inactive))
+				if(pi.getDigitalValue(inactive))
 				{
 					continue lvls;
 				}
@@ -106,14 +105,14 @@ public class Ventilation
 		return Level.DEFAULT;
 	}
 	
-	public VentilationMode getVentilationMode(Environment env)
+	public VentilationMode getVentilationMode(Pi pi)
 	{
 		if(bridgeModeGpioPin == -1)
 		{
 			return VentilationMode.UNKNOWN;
 		}
 		
-		boolean state = env.getPi().getDigitalValue(bridgeModeGpioPin);
+		boolean state = pi.getDigitalValue(bridgeModeGpioPin);
 		
 		if(bridgeModeInvert)
 		{

@@ -1,5 +1,7 @@
 package de.ddd.aircontrol.control;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,25 +33,25 @@ public class ControllerSimple implements Controller
 	}
 	
 	@Override
-	public Level check(Environment env)
+	public Level check(Level lastLevel, Map<String, SensorResult> sensorResults)
 	{
 		log.info("check new level for ventilation");
 		
-		SensorResult res = env.getLastResult(Environment.SENSOR_BATH);
+		SensorResult res = sensorResults.get(Environment.SENSOR_BATH);
 		
 		if(!res.hasHumidity())
 		{
 			log.debug("no bath data to process, abort");
-			return env.getLastLevel();
+			return lastLevel;
 		}
 		
 		int h = (int)res.humidity();
 		
 		final Level lvl;
 		
-		log.trace("current level {}, humidity {}", env.getLastLevel(), h);
+		log.trace("current level {}, humidity {}", lastLevel, h);
 		
-		switch(env.getLastLevel())
+		switch(lastLevel)
 		{
 			default ->
 			{

@@ -103,7 +103,7 @@ public class ViewHome extends JPanel implements View
 						{
 							if(env.isHandMode())
 							{
-								env.getVentilation().setLevel(lvl, env);
+								env.getVentilation().setLevel(lvl, env.getPi());
 							}
 						});
 				}
@@ -178,7 +178,7 @@ public class ViewHome extends JPanel implements View
 			lblTemperature.setText((int)result.temperature() + "°");
 		}
 		
-		switch(env.getVentilation().getVentilationMode(env))
+		switch(env.getVentilation().getVentilationMode(env.getPi()))
 		{
 			case BRIDGE ->
 			{
