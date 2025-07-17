@@ -10,14 +10,14 @@
 #define SSID_MAX_LENGTH 63
 #define PASSWORD_MAX_LENGTH 63
 
-const char* SSID = "WLAN-RENRQL";
-const char* PSK = "2825438003530155";
+const char* SSID = "FRITZ!Box 7530 LZ";
+const char* PSK = "51318071831496347138";
 
 const char* OWN_SSID = "WLAN-ESP";
 const char* OWN_PWD = "WLAN-ESP"; // min 8 char  or NULL
 
 int address = 0;
-byte value;
+uint8_t value;
 
 int counter = 0;
 
@@ -66,8 +66,24 @@ void loop()
   Serial.println(t);
   Serial.print("Feuchtigkeit: ");
   Serial.println(h);
+  Serial.print("value: ");
+  Serial.println(value);
   
   delay(1000);
+
+  if(value == 0)
+  {
+    EEPROM.write(address, 1);
+    Serial.println("write EEPROM to 1");
+    if(EEPROM.commit())
+    {
+      Serial.println("commit succeeded");
+    }
+    else
+    {
+      Serial.println("commit failed");
+    }
+  }
   /*
   blink(1, 1000);
   Serial.print("Wert: ");
