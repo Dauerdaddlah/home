@@ -7,13 +7,13 @@
 #define BAUD 115200
 
 #define HTTP_PORT 80
-#define SSID_MAX_LENGTH 63
+#define SSID_MAX_LENGTH 32
 #define PASSWORD_MAX_LENGTH 63
 
 const char* SSID = "FRITZ!Box 7530 LZ";
 const char* PSK = "51318071831496347138";
 
-const char* OWN_SSID = "WLAN-ESP";
+const char* OWN_SSID = "WLAN-ESP"; // max 
 const char* OWN_PWD = "WLAN-ESP"; // min 8 char  or NULL
 
 int address = 0;
@@ -162,6 +162,8 @@ void initWiFi()
   IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(IP);
+
+  //WiFi.softAPdisconnect(wifioff);
 }
 
 void connectWiFi()
@@ -186,6 +188,7 @@ inline bool isWifiConnected()
 void initServer()
 {
   server.on("/", handle_root);
+  server.on("/test", handle_test);
   server.begin();
 }
 
@@ -204,4 +207,17 @@ void handle_root()
   data +="}";
 
   server.send(200, "text/json", data);
+}
+
+void handle_test()
+{
+  Serial.println("received request test");
+
+  String s1 = server.arg("test1");
+  String s2 = server.arg("test2");
+
+  Serial.print("test1: ");
+  Serial.println(s1);
+  Serial.print("test2: ");
+  Serial.println(s2);
 }
