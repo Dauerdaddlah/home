@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ventilation System Control</title>
     <!-- Use Tailwind CSS for styling without a build step -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!--script src="https://cdn.tailwindcss.com"></script-->
+    <script src="tailwind.js"></script>
     <style>
         /* Custom styles for the range slider for better visual feedback */
         .slider-wrapper {
@@ -31,7 +33,7 @@
             transform: translateY(-50%);
             z-index: 10;
             /* Define a custom property for the thumb color */
-            --thumb-color: #93c5fd; 
+            --thumb-color: #93c5fd;
         }
 
         /* Use the CSS variable to set the thumb color */
@@ -81,6 +83,7 @@
         }
     </style>
 </head>
+
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 font-sans">
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg space-y-8">
         <h1 class="text-3xl font-bold text-gray-800 text-center">Ventilation System Control Panel</h1>
@@ -89,10 +92,10 @@
         <div class="flex justify-center my-6">
             <img id="ventilationImage" src="ventilation.png" alt="Ventilation System" class="w-36 h-36 text-gray-800" />
         </div>
-		
-		<div class="flex justify-center flex-col items-center my-6">
-	        <div id="intervalDisplay" class="mt-4 text-xl font-semibold text-gray-700">00:00</div>
-	    </div>
+
+        <div class="flex justify-center flex-col items-center my-6">
+            <div id="intervalDisplay" class="mt-4 text-xl font-semibold text-gray-700">00:00</div>
+        </div>
 
         <!-- Section with the slider to change the state and a new interval input -->
         <div class="space-y-4">
@@ -101,14 +104,17 @@
                 <span id="stateSliderValueLabel" class="dynamic-label">Standard</span>
                 <input type="range" id="stateSlider" min="0" max="4" value="0" step="1">
             </div>
-			
-			<!-- Error message display area -->
-            <div id="errorMessage" class="text-red-500 font-medium text-center transition-all duration-300 transform-gpu opacity-0 h-0 overflow-hidden"></div>
+
+            <!-- Error message display area -->
+            <div id="errorMessage"
+                class="text-red-500 font-medium text-center transition-all duration-300 transform-gpu opacity-0 h-0 overflow-hidden">
+            </div>
 
 
             <!-- Slider for the interval in minutes with visible ticks -->
             <div class="mt-16">
-                <label for="intervalSlider" class="block text-sm font-medium text-gray-700 text-center mb-4">Interval in Minutes</label>
+                <label for="intervalSlider" class="block text-sm font-medium text-gray-700 text-center mb-4">Interval in
+                    Minutes</label>
                 <div class="slider-wrapper">
                     <span id="intervalSliderValueLabel" class="dynamic-label">5 Minutes</span>
                     <input type="range" id="intervalSlider" min="0" max="17" value="4" step="1">
@@ -116,7 +122,7 @@
             </div>
 
             <button id="updateStateButton"
-                    class="w-full py-3 mt-8 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all duration-200 active:scale-95 disabled:bg-gray-400">
+                class="w-full py-3 mt-8 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all duration-200 active:scale-95 disabled:bg-gray-400">
                 Update State
             </button>
         </div>
@@ -132,7 +138,7 @@
             const intervalSliderValueLabel = document.getElementById('intervalSliderValueLabel');
             const updateStateButton = document.getElementById('updateStateButton');
             const ventilationImage = document.getElementById('ventilationImage');
-			const intervalDisplay = document.getElementById('intervalDisplay'); // New reference for the interval display label
+            const intervalDisplay = document.getElementById('intervalDisplay'); // New reference for the interval display label
 
             // SVG code to use as a fallback if the PNG is not found
             const fallbackSvg = `
@@ -140,11 +146,11 @@
                     <circle cx="12" cy="12" r="10" />
                 </svg>
             `;
-			
-			// --- Countdown Timer Variables ---
+
+            // --- Countdown Timer Variables ---
             let countdownInterval;
             let currentIntervalSeconds;
-            
+
             // Set up the fallback for the image
             ventilationImage.onerror = () => {
                 const imageParent = ventilationImage.parentNode;
@@ -163,16 +169,16 @@
             // --- API Endpoints (Relative URLs) ---
             const setStateUrl = 'set-state';
             const statusUrl = 'status';
-            
+
             // Function to update the state slider's dynamic label and fill
             const updateStateSliderUI = () => {
                 const sliderValue = parseInt(stateSlider.value);
                 const sliderWidth = stateSlider.offsetWidth;
                 const thumbPosition = (sliderValue / (stateSlider.max - stateSlider.min)) * sliderWidth;
-                
+
                 // Get the color for the current state
                 const currentColor = stateColors[sliderValue];
-                
+
                 // Update the dynamic label's text, position, and color
                 stateSliderValueLabel.textContent = stateNames[sliderValue];
                 stateSliderValueLabel.style.left = `${thumbPosition}px`;
@@ -182,18 +188,18 @@
                 // Update the slider's background and thumb to create the fill effect
                 const fillPercentage = (sliderValue / (stateSlider.max - stateSlider.min)) * 100;
                 stateSlider.style.background = `linear-gradient(to right, ${currentColor} ${fillPercentage}%, #d1d5db ${fillPercentage}%)`;
-                
+
                 // Update the CSS variable for the thumb color
-                stateSlider.style.setProperty('--thumb-color', currentColor); 
+                stateSlider.style.setProperty('--thumb-color', currentColor);
             };
-			
-			// New function to format and display the interval
+
+            // New function to format and display the interval
             const formatTime = (totalSeconds) => {
                 if (totalSeconds < 0) totalSeconds = 0; // Prevent negative time
                 const hours = Math.floor(totalSeconds / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
                 const seconds = totalSeconds % 60;
-                
+
                 const formattedMinutes = String(minutes).padStart(2, '0');
                 const formattedSeconds = String(seconds).padStart(2, '0');
 
@@ -205,15 +211,15 @@
                     return `${formattedMinutes}:${formattedSeconds}`;
                 }
             };
-			
-			// New function to start the countdown
+
+            // New function to start the countdown
             const startCountdown = (initialSeconds) => {
                 stopCountdown(); // Clear any existing timer
                 currentIntervalSeconds = initialSeconds;
 
                 // Immediately update the display
                 intervalDisplay.textContent = formatTime(currentIntervalSeconds);
-                
+
                 // Start a new interval to update the display every second
                 countdownInterval = setInterval(() => {
                     currentIntervalSeconds--;
@@ -240,7 +246,7 @@
                 const sliderValue = parseInt(intervalSlider.value);
                 const sliderWidth = intervalSlider.offsetWidth;
                 const thumbPosition = (sliderValue / (intervalSlider.max - intervalSlider.min)) * sliderWidth;
-                
+
                 // Get the correct minute value from the array
                 const minuteValue = intervalValues[sliderValue];
 
@@ -254,11 +260,11 @@
                 const fillPercentage = (sliderValue / (intervalSlider.max - intervalSlider.min)) * 100;
                 intervalSlider.style.background = `linear-gradient(to right, #93c5fd ${fillPercentage}%, #d1d5db ${fillPercentage}%)`;
                 intervalSlider.style.setProperty('--thumb-color', '#93c5fd');
-				
-				updateStateButton.disabled = (intervalSlider.value == 0);
+
+                updateStateButton.disabled = (intervalSlider.value == 0);
             };
-			
-			// Function to show and hide error messages
+
+            // Function to show and hide error messages
             const showErrorMessage = (message) => {
                 errorMessage.textContent = message;
                 errorMessage.classList.remove('opacity-0', 'h-0');
@@ -275,13 +281,13 @@
                 const newStateValue = parseInt(stateSlider.value);
                 // Convert the interval from minutes to seconds
                 const newIntervalValueInSeconds = intervalValues[parseInt(intervalSlider.value)] * 60;
-                
-				// Validate that the interval is greater than 0
+
+                // Validate that the interval is greater than 0
                 if (newIntervalValueInSeconds === 0) {
                     showErrorMessage('Interval must be greater than 0 minutes.');
                     return;
                 }
-				
+
                 console.log(`Updating state to "${stateNames[newStateValue]}" with an interval of ${newIntervalValueInSeconds} seconds...`);
                 updateStateButton.disabled = true;
 
@@ -299,8 +305,8 @@
                     }
 
                     console.log(`State successfully set to "${stateNames[newStateValue]}"`);
-					
-					fetchCurrentState();
+
+                    fetchCurrentState();
                 } catch (error) {
                     console.error('Error updating state:', error);
                 } finally {
@@ -320,31 +326,31 @@
                     }
 
                     const data = await response.json();
-                    
+
                     // Update sliders with the fetched values
                     stateSlider.value = data.state;
 
                     // Convert the received interval from seconds back to minutes
                     const intervalInMinutes = data.interval / 60;
-                    
-					// Find the highest interval value in our array that is less than or equal to the fetched interval
+
+                    // Find the highest interval value in our array that is less than or equal to the fetched interval
                     let selectedIntervalIndex = 0;
                     for (let i = 0; i < intervalValues.length; i++) {
                         if (intervalValues[i] <= intervalInMinutes) {
                             selectedIntervalIndex = i;
                         } else {
                             // Since the array is sorted, we can break once we find a value that's too high
-                            break; 
+                            break;
                         }
                     }
-                    
+
                     intervalSlider.value = selectedIntervalIndex;
 
                     // Update the UI to reflect the new slider positions
                     updateStateSliderUI();
                     updateIntervalSliderUI();
-					
-					// Start the countdown with the fetched interval
+
+                    // Start the countdown with the fetched interval
                     startCountdown(data.interval);
                 } catch (error) {
                     console.error('Error fetching current state:', error);
@@ -355,7 +361,7 @@
             updateStateButton.addEventListener('click', sendNewState);
             stateSlider.addEventListener('input', updateStateSliderUI);
             intervalSlider.addEventListener('input', updateIntervalSliderUI);
-            
+
             // Add a resize event listener to update the label position
             window.addEventListener('resize', () => {
                 updateStateSliderUI();
@@ -367,4 +373,5 @@
         });
     </script>
 </body>
+
 </html>

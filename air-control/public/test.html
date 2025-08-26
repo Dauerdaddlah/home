@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventilation System Dashboard</title>
+    <style>
+        /* General body and font styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Main container for responsiveness */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Card and section styles */
+        .card {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+
+        .status-badge {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        /* Flexbox for main status grid */
+        .main-status-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+        }
+
+        .main-status-item {
+            flex-grow: 1;
+        }
+
+        .main-status-item h4 {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin: 0 0 5px 0;
+        }
+
+        .main-status-item h2 {
+            font-size: 2.2em;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* Buttons styling */
+        .button-group {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Live Measurements Grid */
+        .measurement-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            text-align: center;
+        }
+
+        .measurement-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .measurement-item h5 {
+            color: #6c757d;
+            font-size: 0.8em;
+            margin: 0 0 5px 0;
+        }
+
+        .measurement-item h3 {
+            font-size: 1.8em;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* Configuration Form */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-item label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .config-item input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .config-item input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        /* Responsive design for mobile view */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .main-status-grid, .measurement-grid, .config-grid {
+                grid-template-columns: 1fr;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .measurement-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                text-align: left;
+            }
+            .measurement-item h5, .measurement-item h3 {
+                margin: 0;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <header class="card-header">
+            <h2>Ventilation Unit A</h2>
+            <span class="status-badge">ACTIVE</span>
+            <button style="border:none; background:none; font-size:1.5em; cursor:pointer;">⚙️</button>
+        </header>
+
+        <div class="card">
+            <h3>Current Operation</h3>
+            <div class="main-status-grid">
+                <div class="main-status-item">
+                    <h4>Operational State</h4>
+                    <h2>Manual Override</h2>
+                </div>
+                <div class="main-status-item">
+                    <h4>Fan Speed</h4>
+                    <h2>80%</h2>
+                </div>
+                <div class="main-status-item">
+                    <h4>Mode</h4>
+                    <h2>Cooling</h2>
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary">Start/Stop</button>
+                <button class="btn btn-secondary">Schedule Mode</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Live Data</h3>
+            <div class="measurement-grid">
+                <div class="measurement-item">
+                    <h5>Temperature ($^\circ C$)</h5>
+                    <h3>22.5</h3>
+                </div>
+                <div class="measurement-item">
+                    <h5>Humidity (%)</h5>
+                    <h3>45</h3>
+                </div>
+                <div class="measurement-item">
+                    <h5>Airflow ($m^3/h$)</h5>
+                    <h3>1250</h3>
+                </div>
+                <div class="measurement-item">
+                    <h5>Filter Status</h5>
+                    <h3 style="color: #28a745;">Good</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>System Configuration</h3>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="setpoint_temp">Temperature Setpoint ($^\circ C$)</label>
+                    <input type="number" id="setpoint_temp" value="21.0" min="15" max="30">
+                </div>
+                <div class="config-item">
+                    <label for="min_fan_speed">Minimum Fan Speed (%)</label>
+                    <input type="number" id="min_fan_speed" value="30" min="0" max="100">
+                </div>
+                <div class="config-item">
+                    <label for="max_fan_speed">Maximum Fan Speed (%)</label>
+                    <input type="number" id="max_fan_speed" value="100" min="0" max="100">
+                </div>
+                <div class="config-item">
+                    <label for="min_airflow">Minimum Airflow ($m^3/h$)</label>
+                    <input type="number" id="min_airflow" value="500" min="0" max="2000">
+                </div>
+                <div class="config-item">
+                    <label for="schedule_time">Schedule Time (HH:mm)</label>
+                    <input type="time" id="schedule_time" value="08:00">
+                </div>
+                <div class="config-item">
+                    <label for="filter_alarm">Filter Alarm Threshold (h)</label>
+                    <input type="number" id="filter_alarm" value="2000" min="500">
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 24px;">
+                <button class="btn btn-success">Save Configuration</button>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
