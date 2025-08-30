@@ -11,12 +11,17 @@ public class Ventilation
 	private final int bridgeModeGpioPin;
 	private final boolean bridgeModeInvert;
 	
+	private final Pi pi;
+	private volatile Level level;
+	private volatile Level bridgeLevel;
+	
 	public Ventilation(Pi pi,
 			EnumMap<Level, Configuration> configurations,
 			EnumMap<Level, Configuration> bridgeConfigurations,
 			int bridgeModeGpioPin,
 			boolean bridgeModeInvert)
 	{
+		this.pi = pi;
 		this.configurations = configurations;
 		this.bridgeConfigurations = bridgeConfigurations;
 		this.bridgeModeGpioPin = bridgeModeGpioPin;
@@ -38,33 +43,51 @@ public class Ventilation
 				throw new IllegalArgumentException("missing bridgeconfiguration for Level " + l);
 			}
 		}
+		
+		this.level = readLevel();
+		this.bridgeLevel = readBridgeLevel();
 	}
 	
-	public void setLevel(Level level, Pi pi)
+	public void setLevel(Level level)
 	{
+		if(this.level == level)
+		{
+			return;
+		}
+		
 		Configuration config = configurations.get(level);
 		
-		configure(config, pi);
+		configure(config);
 	}
 	
-	public Level getLevel(Pi pi)
+	public Level getLevel()
 	{
-		return getLevel(pi, configurations);
+		return level;
 	}
 	
-	public void setBridgeLevel(Level bridgeLevel, Pi pi)
+	public Level readLevel()
 	{
+		return readLevel(configurations);
+	}
+	
+	public void setBridgeLevel(Level bridgeLevel)
+	{
+		if(this.bridgeLevel == bridgeLevel)
+		{
+			return;
+		}
+		
 		Configuration config = bridgeConfigurations.get(bridgeLevel);
 		
-		configure(config, pi);
+		configure(config);
 	}
 	
-	public Level getBridgeLevel(Pi pi)
+	private Level readBridgeLevel()
 	{
-		return getLevel(pi, bridgeConfigurations);
+		return readLevel(bridgeConfigurations);
 	}
 	
-	private void configure(Configuration config, Pi pi)
+	private void configure(Configuration config)
 	{
 		for(int active : config.activeGpioPins)
 		{
@@ -77,7 +100,7 @@ public class Ventilation
 		}
 	}
 	
-	private Level getLevel(Pi pi, EnumMap<Level, Configuration> configurations)
+	private Level readLevel(EnumMap<Level, Configuration> configurations)
 	{
 		lvls:for(Level lvl : configurations.keySet())
 		{

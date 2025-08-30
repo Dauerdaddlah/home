@@ -1,13 +1,13 @@
 package de.ddd.aircontrol.control;
 
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.ddd.aircontrol.Environment;
 import de.ddd.aircontrol.sensor.SensorResult;
+import de.ddd.aircontrol.sensor.Sensors;
 import de.ddd.aircontrol.ventilation.Level;
+import de.ddd.aircontrol.ventilation.Ventilation;
 
 public class ControllerSimple implements Controller
 {
@@ -33,13 +33,16 @@ public class ControllerSimple implements Controller
 	}
 	
 	@Override
-	public Level check(Level lastLevel, Map<String, SensorResult> sensorResults)
+	public Level check(Ventilation ventilation, Sensors sensors)
 	{
 		log.info("check new level for ventilation");
 		
+		var sensorResults = sensors.getLastResults();
 		SensorResult res = sensorResults.get(Environment.SENSOR_BATH);
 		
-		if(!res.hasHumidity())
+		Level lastLevel = ventilation.getLevel();
+		
+		if(res == null || !res.hasHumidity())
 		{
 			log.debug("no bath data to process, abort");
 			return lastLevel;

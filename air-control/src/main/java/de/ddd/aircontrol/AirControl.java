@@ -1,43 +1,37 @@
 package de.ddd.aircontrol;
 
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
-
-import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.ddd.aircontrol.control.Controller;
+import de.ddd.aircontrol.control.ControllerManual;
 import de.ddd.aircontrol.control.ControllerSimple;
 import de.ddd.aircontrol.datalog.DataLogger;
 import de.ddd.aircontrol.datalog.DataLoggerFile;
 import de.ddd.aircontrol.event.Event;
 import de.ddd.aircontrol.event.EventAction;
 import de.ddd.aircontrol.event.EventQueue;
-import de.ddd.aircontrol.gui.Gui;
 import de.ddd.aircontrol.pi.Model;
 import de.ddd.aircontrol.pi.Pi;
 import de.ddd.aircontrol.pi.RaspberryPi;
 import de.ddd.aircontrol.pi.SimPi;
 import de.ddd.aircontrol.sensor.HumidSensor;
-import de.ddd.aircontrol.sensor.Sensor;
+import de.ddd.aircontrol.sensor.Sensors;
 import de.ddd.aircontrol.sensor.SimSensor;
 import de.ddd.aircontrol.settings.Settings;
 import de.ddd.aircontrol.settings.SettingsProperties;
 import de.ddd.aircontrol.ventilation.Level;
 import de.ddd.aircontrol.ventilation.Ventilation;
 import de.ddd.aircontrol.ventilation.Ventilation.Configuration;
+import de.ddd.aircontrol.web.Server;
 
-public class AirControl implements EventQueue, EventAction
+public class AirControl
 {
 	private static final Logger log = LoggerFactory.getLogger(AirControl.class);
 	
@@ -60,6 +54,8 @@ public class AirControl implements EventQueue, EventAction
 	}
 	
 	public static final String SETTING_PREFIX = "de.ddd.aircontrol.";
+	
+	public static final String SETTING_WEBSERVER_PORT = SETTING_PREFIX + "webserver.port";
 	
 	public static final String SETTING_PI_PREFIX = SETTING_PREFIX + "pi.";
 	
@@ -104,21 +100,26 @@ public class AirControl implements EventQueue, EventAction
 	public static final String SETTING_CONTROLLER_END2 = SETTING_CONTROLLER_PREFIX + "end2";
 	public static final String SETTING_CONTROLLER_END3 = SETTING_CONTROLLER_PREFIX + "end3";
 	
-	private final Gui gui;
+	private final EventQueue events;
 	
-	private final PriorityBlockingQueue<Event> actions;
-	
-	private final Environment env;
+	private final Settings settings;
+	private final Pi pi;
+	private final DataLogger dataLogger;
+	private final Sensors sensors;
+	private final Ventilation ventilation;
+	private final ControllerManual controllerManual;
+	private final Controller controller;
+	private final Server server;
 	
 	public AirControl()
 	{
-		actions = new PriorityBlockingQueue<>();
+		events = new EventQueue();
 		
 		log.debug("load settings");
-		Settings settings = new SettingsProperties(Paths.get("config", "aircontrol.properties"));
+		settings = new SettingsProperties(Paths.get("config", "aircontrol.properties"));
 		
 		log.debug("create pi");
-		final Pi pi;
+		
 		switch(settings.getString(SETTING_PI_TYPE, SETTING_PI_TYPE_HARDWARE))
 		{
 			case SETTING_PI_TYPE_HARDWARE ->
@@ -136,13 +137,13 @@ public class AirControl implements EventQueue, EventAction
 		}
 		
 		log.debug("create data logger");
-		DataLogger dataLogger = new DataLoggerFile(
+		dataLogger = new DataLoggerFile(
 				Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")),
 				settings.getLong(SETTING_DATA_MAXSIZE, 1024 * 1024 * 10),
 				settings.getInt(SETTING_DATA_COUNT, 10));
 		
 		log.debug("load sensors");
-		Map<String, Sensor> sensors = new HashMap<>();
+		sensors = new Sensors();
 		for(String name : settings.getString(SETTING_SENSOR_NAMES, "bath").split("[,]"))
 		{
 			name = name.trim();
@@ -153,7 +154,7 @@ public class AirControl implements EventQueue, EventAction
 			{
 				case SETTING_SENSOR_TYPE_HTTP ->
 				{
-					sensors.put(name,
+					sensors.addSensor(name,
 						new HumidSensor(
 							settings.getString(SETTING_SENSOR_PREFIX + name + SETTING_SENSOR_URL_SUFFIX, "http://localhost/" + name),
 							Duration.ofMillis(
@@ -163,7 +164,7 @@ public class AirControl implements EventQueue, EventAction
 				}
 				case SETTING_SENSOR_TYPE_SIM ->
 				{
-					sensors.put(name, new SimSensor());
+					sensors.addSensor(name, new SimSensor());
 				}
 				default ->
 				{
@@ -173,28 +174,10 @@ public class AirControl implements EventQueue, EventAction
 		}
 		
 		log.debug("create ventilation");
-		Ventilation ventilation = new Ventilation(pi, getConfigurations(settings, "normal"), getConfigurations(settings, "bridge"),
+		ventilation = new Ventilation(pi, getConfigurations(settings, "normal"), getConfigurations(settings, "bridge"),
 				settings.getInt(SETTING_VENTILATION_BRIDGE_MODE, -1),
 				settings.getBoolean(SETTING_VENTILATION_BRIDGE_MODE_REVERSE, false));
 		
-		log.debug("startup GUI");
-		AtomicReference<Gui> refGui = new AtomicReference<>();
-		try
-		{
-			SwingUtilities.invokeAndWait(() ->
-				{
-					refGui.set(new Gui(this));
-				});
-		}
-		catch (InvocationTargetException | InterruptedException e)
-		{
-			throw new RuntimeException("could not create GUI", e);
-		}
-		
-		this.gui = refGui.get();
-		
-		
-		Controller controller;
 		switch(settings.getString(SETTING_CONTROLLER_TYPE, SETTING_CONTROLLER_TYPE_SIMPLE))
 		{
 			case SETTING_CONTROLLER_TYPE_SIMPLE ->
@@ -213,7 +196,10 @@ public class AirControl implements EventQueue, EventAction
 			}
 		}
 		
-		env = new Environment(ventilation, sensors, settings, pi, dataLogger, controller, this, this);
+		controllerManual = new ControllerManual(controller);
+		
+		int port = settings.getInt(SETTING_WEBSERVER_PORT, 12345);
+		server = port == 0 ? null :new Server(port);
 	}
 
 	private EnumMap<Level, Configuration> getConfigurations(Settings settings, String type)
@@ -263,18 +249,15 @@ public class AirControl implements EventQueue, EventAction
 	{
 		log.info("start loop");
 		
-		addEvent(new Event(System.currentTimeMillis(), this));
+		addEvent(this::checkAllPeriodically);
 		
 		while(true)
 		{
 			try
 			{
 				log.info("next event");
-				Event e = getNextEvent();
-				e.action().performAction(env);
-				
-				SwingUtilities.invokeAndWait(() ->
-					gui.updateState(env));
+				Event e = events.getNextEvent();
+				e.action().performAction(events, e);
 			}
 			catch (Exception exc)
 			{
@@ -285,68 +268,89 @@ public class AirControl implements EventQueue, EventAction
 		}
 	}
 	
-	private synchronized Event getNextEvent() throws InterruptedException
+	public void addEvent(Event e)
 	{
-		while(true)
-		{
-			Event e = actions.peek();
-			
-			if(e == null)
-			{
-				this.wait();
-			}
-			else
-			{
-				long delta = e.due() - System.currentTimeMillis();
-				if(delta <= 0)
-				{
-					return actions.take();
-				}
-				else
-				{
-					this.wait(delta);
-				}
-			}
-		}
+		events.addEvent(e);
 	}
-
-	@Override
-	public void performAction(Environment env)
+	
+	public void addEvent(EventAction a)
 	{
+		events.addEvent(new Event(System.currentTimeMillis(), a));
+	}
+	
+	private void checkAllPeriodically(EventQueue queue, Event e) throws Exception
+	{
+		log.info("start periodic check");
 		try
 		{
-			// avoid multiple check events in the queue (may happen if triggered by gui)
-			for(Event e : actions)
-			{
-				if(e.action() == this)
-				{
-					actions.remove(e);
-				}
-			}
-			
-			env.pullSensors();
-			
-			if(!env.isHandMode())
-			{
-				Level lvl = env.getController().check(env.getLastLevel(), env.getLastResults());
-				
-				if(lvl != env.getLastLevel())
-				{
-					env.setLastLevel(lvl);
-					env.getVentilation().setLevel(lvl, env.getPi());
-				}
-			}
+			checkAll(queue, e);
 		}
 		finally
 		{
-			addEvent(new Event(System.currentTimeMillis() + (60 * 1000), this));
+			// TODO
+			long delta = 60 * 1000;
+			log.debug("add next check in {}", delta);
+			queue.addEvent(new Event(System.currentTimeMillis() + delta, this::checkAllPeriodically));
 		}
 	}
 	
-	@Override
-	public synchronized void addEvent(Event e)
+	public void checkAll(EventQueue queue, Event e) throws Exception
 	{
-		actions.add(e);
-		this.notify();
+		log.info("check all");
+		var results = sensors.pullSensors();
+		
+		for(String key : results.keySet())
+		{
+			dataLogger.log(key, results.get(key));
+		}
+		
+		Level nextLevel = controllerManual.check(ventilation, sensors);
+		
+		ventilation.setLevel(nextLevel);
+	}
+	
+	public Controller getController()
+	{
+		return controller;
+	}
+	
+	public DataLogger getDataLogger()
+	{
+		return dataLogger;
+	}
+	
+	public Pi getPi()
+	{
+		return pi;
+	}
+	
+	public EventQueue getEvents()
+	{
+		return events;
+	}
+	
+	public Sensors getSensors()
+	{
+		return sensors;
+	}
+	
+	public Server getServer()
+	{
+		return server;
+	}
+	
+	public Settings getSettings()
+	{
+		return settings;
+	}
+	
+	public Ventilation getVentilation()
+	{
+		return ventilation;
+	}
+	
+	public ControllerManual getControllerManual()
+	{
+		return controllerManual;
 	}
 }

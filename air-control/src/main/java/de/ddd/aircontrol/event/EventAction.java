@@ -1,8 +1,6 @@
 package de.ddd.aircontrol.event;
 
-import de.ddd.aircontrol.Environment;
-
 public interface EventAction
 {
-	public void performAction(Environment env);
+	public void performAction(EventQueue queue, Event event) throws Exception;
 }
