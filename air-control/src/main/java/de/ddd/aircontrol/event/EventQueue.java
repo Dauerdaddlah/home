@@ -1,15 +1,14 @@
 package de.ddd.aircontrol.event;
 
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.PriorityQueue;
 
 public class EventQueue
 {
-	private final BlockingDeque<Event> events;
+	private final PriorityQueue<Event> events;
 	
 	public EventQueue()
 	{
-		events = new LinkedBlockingDeque<>();
+		events = new PriorityQueue<>();
 	}
 	
 	

@@ -1,7 +1,11 @@
 package de.ddd.aircontrol.pi;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
@@ -12,118 +16,107 @@ import com.pi4j.io.gpio.digital.DigitalOutput;
 
 public class RaspberryPi implements Pi
 {
+	private static final Logger log = LoggerFactory.getLogger(RaspberryPi.class);
+	
 	private final Model model;
 	private final Context pi4j;
 	
-	private final Map<Integer, Pin> pinCache;
+	private final List<PiPin> pins;
 	
 	public RaspberryPi(Model model)
 	{
+		log.debug("create Raspberry pi with model {}", model);
+		
 		this.model = model;
 		pi4j = Pi4J.newAutoContext();
-		pinCache = new ConcurrentHashMap<>();
-	}
-	
-	@Override
-	public int getAnalogValue(int gpioPin)
-	{
-		return configureInt(gpioPin, PinMode.ANALOG_IN).getAnalogValue();
-	}
-	
-	@Override
-	public void setAnalogValue(int gpioPin, int value)
-	{
-		configureInt(gpioPin, PinMode.ANALOG_OUT).setAnalogValue(value);
-	}
-	
-	@Override
-	public boolean getDigitalValue(int gpioPin)
-	{
-		return configureInt(gpioPin, PinMode.DIGITAL_IN).getDigitalValue();
-	}
-	
-	@Override
-	public void setDigitalValue(int gpioPin, boolean value)
-	{
-		configureInt(gpioPin, PinMode.DIGITAL_OUT).setDigitalValue(value);
-	}
-	
-	@Override
-	public void configure(int gpioPin, PinMode mode) throws IllegalArgumentException
-	{
-		Pin pin = configureInt(gpioPin, mode);
 		
-		if(pin.getPinMode() != mode)
+		List<PiPin> pins = new ArrayList<>();
+		
+		for(int i = 0; i < model.getNumPins(); i++)
 		{
-			throw new IllegalArgumentException("gpiopin " + gpioPin + " cannot be configured as " + mode
-					+ " it is already a " + pin.getPinMode());
-		}
-	}
-	
-	private Pin configureInt(int gpioPin, PinMode mode) throws IllegalArgumentException
-	{
-		if(model.toPin(gpioPin) == -1)
-		{
-			throw new IllegalArgumentException("invalid gpio-pin " + gpioPin);
+			pins.add(new Pin(i));
 		}
 		
-		return pinCache.computeIfAbsent(gpioPin, p -> new Pin(gpioPin, mode));
+		this.pins = Collections.unmodifiableList(pins);
+	}
+	
+	@Override
+	public List<PiPin> getAllPins()
+	{
+		return pins;
+	}
+	
+	@Override
+	public PiPin getPin(int gpioPin)
+	{
+		return pins.get(gpioPin);
+	}
+	
+	@Override
+	public int getNumPins()
+	{
+		return model.getNumPins();
 	}
 
-	private class Pin implements PiPinAnalogInput, PiPinAnalogOutput, PiPinDigitalInput, PiPinDigitalOutput
+	private class Pin implements PiPin
 	{
-		private final PinMode mode;
-		private final AnalogInput analogIn;
-		private final AnalogOutput analogOut;
-		private final DigitalInput digitalIn;
-		private final DigitalOutput digitalOut;
+		private final int pin;
+		private PinMode mode;
+		private AnalogInput analogIn;
+		private AnalogOutput analogOut;
+		private DigitalInput digitalIn;
+		private DigitalOutput digitalOut;
 		
-		public Pin(int gpioPin, PinMode mode)
+		public Pin(int gpioPin)
 		{
-			this.mode = mode;
-			
-			switch(mode)
-			{
-				case ANALOG_IN ->
-				{
-					analogIn = pi4j.analogInput().create(gpioPin);
-					analogOut = null;
-					digitalIn = null;
-					digitalOut = null;
-				}
-				case ANALOG_OUT ->
-				{
-					analogIn = null;
-					analogOut = pi4j.analogOutput().create(gpioPin);
-					digitalIn = null;
-					digitalOut = null;
-				}
-				case DIGITAL_IN ->
-				{
-					analogIn = null;
-					analogOut = null;
-					digitalIn = pi4j.digitalInput().create(gpioPin);
-					digitalOut = null;
-				}
-				case DIGITAL_OUT ->
-				{
-					analogIn = null;
-					analogOut = null;
-					digitalIn = null;
-					digitalOut = pi4j.digitalOutput().create(gpioPin);
-				}
-				default ->
-				{
-					// should not be able to happen
-					throw new RuntimeException();
-				}
-			}
+			this.pin = gpioPin;
+			analogIn = null;
+			analogOut = null;
+			digitalIn = null;
+			digitalOut = null;
+			mode = PinMode.UNKNOWN;
 		}
 		
 		@Override
 		public PinMode getPinMode()
 		{
 			return mode;
+		}
+		
+		@Override
+		public void setPinMode(PinMode mode) throws IllegalStateException
+		{
+			if(this.mode == mode)
+			{
+				return;
+			}
+			
+			if(this.mode != PinMode.UNKNOWN)
+			{
+				throw new IllegalStateException("cannot set pin " + pin + " to mode " + mode + " it is already set to " + this.mode);
+			}
+			
+			log.trace("set Pin {} to mode {}", pin, mode);
+			
+			switch(mode)
+			{
+				case ANALOG_IN ->
+					this.analogIn = pi4j.analogInput().create(pin);
+					
+				case ANALOG_OUT ->
+					this.analogOut = pi4j.analogOutput().create(pin);
+					
+				case DIGITAL_IN ->
+					this.digitalIn = pi4j.digitalInput().create(pin);
+					
+				case DIGITAL_OUT ->
+					this.digitalOut = pi4j.digitalOutput().create(pin);
+					
+				default ->
+					throw new IllegalArgumentException("cannot set mode to " + mode + " by hand");
+			}
+			
+			this.mode = mode;
 		}
 
 		@Override

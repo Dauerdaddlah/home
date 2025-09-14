@@ -1,66 +1,52 @@
 package de.ddd.aircontrol.pi;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class SimPi implements Pi
 {
-//	private final Model model;
+	private final Model model;
 	
-	private final SimPin[] pins;
+	private final List<SimPin> pins;
 	
 	public SimPi(Model model)
 	{
-//		this.model = model;
-		pins = new SimPin[model.getNumPins()];
-	}
-	
-	@Override
-	public boolean getDigitalValue(int gpioPin)
-	{
-		return getPin(gpioPin, PinMode.DIGITAL_IN).getDigitalValue();
-	}
-	
-	@Override
-	public void setDigitalValue(int gpioPin, boolean value)
-	{
-		getPin(gpioPin, PinMode.DIGITAL_OUT).setDigitalValue(value);
-	}
-	
-	@Override
-	public int getAnalogValue(int gpioPin)
-	{
-		return getPin(gpioPin, PinMode.ANALOG_IN).getAnalogValue();
-	}
-	
-	@Override
-	public void setAnalogValue(int gpioPin, int value)
-	{
-		getPin(gpioPin, PinMode.ANALOG_OUT).setAnalogValue(value);
-	}
-
-	@Override
-	public void configure(int gpioPin, PinMode mode) throws IllegalArgumentException
-	{
-		SimPin p = getPin(gpioPin, mode);
+		this.model = model;
 		
-		if(p.getPinMode() != mode)
+		List<SimPin> pins = new ArrayList<>();
+		
+		for(int i = 0; i < model.getNumPins(); i++)
 		{
-			throw new IllegalArgumentException();
-		}
-	}
-	
-	private SimPin getPin(int gpioPin, PinMode mode)
-	{
-		if(pins[gpioPin] == null)
-		{
-			pins[gpioPin] = new SimPin(gpioPin, mode);
+			pins.add(new SimPin(i + 1, PinMode.UNKNOWN));
 		}
 		
-		return pins[gpioPin];
+		this.pins = Collections.unmodifiableList(pins);
+	}
+	
+	@Override
+	public int getNumPins()
+	{
+		return model.getNumPins();
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@Override
+	public List<PiPin> getAllPins()
+	{
+		return (List)pins;
+	}
+	
+	@Override
+	public PiPin getPin(int gpioPin)
+	{
+		return pins.get(gpioPin);
 	}
 
-	private static class SimPin implements PiPinDigitalInput, PiPinDigitalOutput, PiPinAnalogOutput, PiPinAnalogInput
+	private static class SimPin implements PiPin
 	{
 //		private final int gpioPin;
-		private final PinMode mode;
+		private PinMode mode;
 		
 		private int value;
 		
@@ -70,6 +56,18 @@ public class SimPi implements Pi
 			this.mode = mode;
 		}
 		
+		@Override
+		public void setPinMode(PinMode mode) throws IllegalStateException
+		{
+			if(this.mode != mode && this.mode != PinMode.UNKNOWN)
+			{
+				throw new IllegalArgumentException("pinmode already set to " + mode);
+			}
+			
+			this.mode = mode;
+		}
+		
+		// TODO add mode checks
 		@Override
 		public int getAnalogValue()
 		{

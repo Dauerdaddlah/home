@@ -3,15 +3,15 @@ package de.ddd.aircontrol.control;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.ddd.aircontrol.Environment;
+import de.ddd.aircontrol.Env;
 import de.ddd.aircontrol.sensor.SensorResult;
-import de.ddd.aircontrol.sensor.Sensors;
 import de.ddd.aircontrol.ventilation.Level;
-import de.ddd.aircontrol.ventilation.Ventilation;
 
 public class ControllerSimple implements Controller
 {
 	private static final Logger log = LoggerFactory.getLogger(ControllerSimple.class);
+	
+	private final String sensorName;
 	
 	private volatile int start1;
 	private volatile int start2;
@@ -20,9 +20,11 @@ public class ControllerSimple implements Controller
 	private volatile int end2;
 	private volatile int end3;
 	
-	public ControllerSimple(int start1, int start2, int start3, int end1, int end2, int end3)
+	public ControllerSimple(String sensorName, int start1, int start2, int start3, int end1, int end2, int end3)
 	{
 		ensureIntegrity(start1, start2, start3, end1, end2, end3);
+		
+		this.sensorName = sensorName;
 		
 		this.start1 = start1;
 		this.start2 = start2;
@@ -33,14 +35,21 @@ public class ControllerSimple implements Controller
 	}
 	
 	@Override
-	public Level check(Ventilation ventilation, Sensors sensors)
+	public Level check(Env env)
 	{
 		log.info("check new level for ventilation");
 		
-		var sensorResults = sensors.getLastResults();
-		SensorResult res = sensorResults.get(Environment.SENSOR_BATH);
+		var sensorData = env.sensor(sensorName);
 		
-		Level lastLevel = ventilation.getLevel();
+		if(sensorData == null)
+		{
+			log.warn("missing sensordata<{}>", sensorName);
+			return Level.DEFAULT;
+		}
+		
+		SensorResult res = sensorData.lastResult();
+		
+		Level lastLevel = env.ventilation().getLevel();
 		
 		if(res == null || !res.hasHumidity())
 		{

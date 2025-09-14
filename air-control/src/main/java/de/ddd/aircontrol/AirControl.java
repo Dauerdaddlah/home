@@ -1,5 +1,6 @@
 package de.ddd.aircontrol;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -10,10 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.ddd.aircontrol.control.Controller;
-import de.ddd.aircontrol.control.ControllerManual;
 import de.ddd.aircontrol.control.ControllerSimple;
 import de.ddd.aircontrol.datalog.DataLogger;
-import de.ddd.aircontrol.datalog.DataLoggerFile;
+import de.ddd.aircontrol.datalog.DataLoggerFileDaily;
 import de.ddd.aircontrol.event.Event;
 import de.ddd.aircontrol.event.EventAction;
 import de.ddd.aircontrol.event.EventQueue;
@@ -30,8 +30,9 @@ import de.ddd.aircontrol.ventilation.Level;
 import de.ddd.aircontrol.ventilation.Ventilation;
 import de.ddd.aircontrol.ventilation.Ventilation.Configuration;
 import de.ddd.aircontrol.web.Server;
+import de.ddd.aircontrol.web.ServerEventQueue;
 
-public class AirControl
+public class AirControl implements ServerEventQueue
 {
 	private static final Logger log = LoggerFactory.getLogger(AirControl.class);
 	
@@ -40,17 +41,9 @@ public class AirControl
 		log.info("Start AirVentilation");
 		
 		log.info("create aircontrol");
-		instance = new AirControl();
+		AirControl ctrl = new AirControl();
 		
-		log.info("start loop");
-		instance.startLoop();
-	}
-	
-	private static volatile AirControl instance;
-	
-	public static AirControl getInstance()
-	{
-		return instance;
+		ctrl.startLoop();
 	}
 	
 	public static final String SETTING_PREFIX = "de.ddd.aircontrol.";
@@ -93,12 +86,15 @@ public class AirControl
 	public static final String SETTING_CONTROLLER_TYPE = SETTING_CONTROLLER_PREFIX + "type";
 	public static final String SETTING_CONTROLLER_TYPE_SIMPLE = "simple";
 	
+	public static final String SETTING_CONTROLLER_SENSOR = SETTING_CONTROLLER_PREFIX + "sensor";
 	public static final String SETTING_CONTROLLER_START1 = SETTING_CONTROLLER_PREFIX + "start1";
 	public static final String SETTING_CONTROLLER_START2 = SETTING_CONTROLLER_PREFIX + "start2";
 	public static final String SETTING_CONTROLLER_START3 = SETTING_CONTROLLER_PREFIX + "start3";
 	public static final String SETTING_CONTROLLER_END1 = SETTING_CONTROLLER_PREFIX + "end1";
 	public static final String SETTING_CONTROLLER_END2 = SETTING_CONTROLLER_PREFIX + "end2";
 	public static final String SETTING_CONTROLLER_END3 = SETTING_CONTROLLER_PREFIX + "end3";
+	
+	public static final String SETTING_CHECK_INTERVAL = SETTING_PREFIX + "check.interval";
 	
 	private final EventQueue events;
 	
@@ -107,9 +103,9 @@ public class AirControl
 	private final DataLogger dataLogger;
 	private final Sensors sensors;
 	private final Ventilation ventilation;
-	private final ControllerManual controllerManual;
 	private final Controller controller;
-	private final Server server;
+//	private final Server server;
+	private final Env env;
 	
 	public AirControl()
 	{
@@ -137,10 +133,19 @@ public class AirControl
 		}
 		
 		log.debug("create data logger");
-		dataLogger = new DataLoggerFile(
-				Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")),
-				settings.getLong(SETTING_DATA_MAXSIZE, 1024 * 1024 * 10),
-				settings.getInt(SETTING_DATA_COUNT, 10));
+//		dataLogger = new DataLoggerFile(
+//				Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")),
+//				settings.getLong(SETTING_DATA_MAXSIZE, 1024 * 1024 * 10),
+//				settings.getInt(SETTING_DATA_COUNT, 10));
+		try
+		{
+			dataLogger = new DataLoggerFileDaily(
+					Paths.get(settings.getString(SETTING_DATA_LOG, "./log/")));
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
 		
 		log.debug("load sensors");
 		sensors = new Sensors();
@@ -183,6 +188,7 @@ public class AirControl
 			case SETTING_CONTROLLER_TYPE_SIMPLE ->
 			{
 				controller = new ControllerSimple(
+						settings.getString(SETTING_CONTROLLER_SENSOR, "bath"),
 						settings.getInt(SETTING_CONTROLLER_START1, 50),
 						settings.getInt(SETTING_CONTROLLER_START2, 60),
 						settings.getInt(SETTING_CONTROLLER_START3, 70),
@@ -196,10 +202,13 @@ public class AirControl
 			}
 		}
 		
-		controllerManual = new ControllerManual(controller);
-		
 		int port = settings.getInt(SETTING_WEBSERVER_PORT, 12345);
-		server = port == 0 ? null :new Server(port);
+		if(port > 0)
+		{
+			new Server(port, this);
+		}
+		
+		env = new Env(sensors, pi, settings, ventilation, controller);
 	}
 
 	private EnumMap<Level, Configuration> getConfigurations(Settings settings, String type)
@@ -255,9 +264,11 @@ public class AirControl
 		{
 			try
 			{
-				log.info("next event");
+				log.info("wait for next event");
 				Event e = events.getNextEvent();
+				log.debug("next event {}", e);
 				e.action().performAction(events, e);
+				log.debug("event finished");
 			}
 			catch (Exception exc)
 			{
@@ -278,6 +289,11 @@ public class AirControl
 		events.addEvent(new Event(System.currentTimeMillis(), a));
 	}
 	
+	public void addEvent(EnvAction a)
+	{
+		events.addEvent(new Event(new EA(a)));
+	}
+	
 	private void checkAllPeriodically(EventQueue queue, Event e) throws Exception
 	{
 		log.info("start periodic check");
@@ -288,7 +304,7 @@ public class AirControl
 		finally
 		{
 			// TODO
-			long delta = 60 * 1000;
+			long delta = settings.getLong(SETTING_CHECK_INTERVAL, 60 * 1000);
 			log.debug("add next check in {}", delta);
 			queue.addEvent(new Event(System.currentTimeMillis() + delta, this::checkAllPeriodically));
 		}
@@ -304,53 +320,30 @@ public class AirControl
 			dataLogger.log(key, results.get(key));
 		}
 		
-		Level nextLevel = controllerManual.check(ventilation, sensors);
+		Level nextLevel = env.controllerManual().check(env);
 		
 		ventilation.setLevel(nextLevel);
 	}
 	
-	public Controller getController()
+	@Override
+	public void accessEnv(EnvAction action)
 	{
-		return controller;
+		addEvent(action);
 	}
 	
-	public DataLogger getDataLogger()
+	private class EA implements EventAction
 	{
-		return dataLogger;
-	}
-	
-	public Pi getPi()
-	{
-		return pi;
-	}
-	
-	public EventQueue getEvents()
-	{
-		return events;
-	}
-	
-	public Sensors getSensors()
-	{
-		return sensors;
-	}
-	
-	public Server getServer()
-	{
-		return server;
-	}
-	
-	public Settings getSettings()
-	{
-		return settings;
-	}
-	
-	public Ventilation getVentilation()
-	{
-		return ventilation;
-	}
-	
-	public ControllerManual getControllerManual()
-	{
-		return controllerManual;
+		private final EnvAction ea;
+		
+		public EA(EnvAction ea)
+		{
+			this.ea = ea;
+		}
+		
+		@Override
+		public void performAction(EventQueue queue, Event event) throws Exception
+		{
+			ea.performAction(env);
+		}
 	}
 }

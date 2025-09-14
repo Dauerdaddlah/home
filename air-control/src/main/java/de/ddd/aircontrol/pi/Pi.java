@@ -1,12 +1,10 @@
 package de.ddd.aircontrol.pi;
 
+import java.util.List;
+
 public interface Pi
 {
-	public int getAnalogValue(int gpioPin);
-	public void setAnalogValue(int gpioPin, int value);
-	
-	public boolean getDigitalValue(int gpioPin);
-	public void setDigitalValue(int gpioPin, boolean value);
-	
-	public void configure(int gpioPin, PinMode mode) throws IllegalArgumentException;
+	public List<PiPin> getAllPins();
+	public int getNumPins();
+	public PiPin getPin(int gpioPin);
 }

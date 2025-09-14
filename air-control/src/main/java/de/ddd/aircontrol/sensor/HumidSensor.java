@@ -39,6 +39,7 @@ public class HumidSensor implements Sensor
 				.build();
 		HttpRequest req = HttpRequest.newBuilder(URI.create(url))
 				.GET()
+				.timeout(timeout)
 				.build();
 		
 		HttpResponse<String> res =  clt.send(req, BodyHandlers.ofString());

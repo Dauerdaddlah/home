@@ -5,6 +5,7 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,5 +101,11 @@ public class SettingsProperties implements Settings
 	public Properties getPropertiesFile()
 	{
 		return propertiesFile;
+	}
+	
+	@Override
+	public Set<String> keySet()
+	{
+		return propertiesFile.stringPropertyNames();
 	}
 }

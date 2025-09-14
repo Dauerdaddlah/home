@@ -1,9 +1,8 @@
 package de.ddd.aircontrol.sensor;
 
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Sensors
 {
@@ -13,14 +12,19 @@ public class Sensors
 	
 	public Sensors()
 	{
-		sensors = new ConcurrentHashMap<>();
-		lastPull = new ConcurrentHashMap<>();
-		lastResult = new ConcurrentHashMap<>();
+		sensors = new HashMap<>();
+		lastPull = new HashMap<>();
+		lastResult = new HashMap<>();
 	}
 	
 	public void addSensor(String name, Sensor sensor)
 	{
 		sensors.put(name, sensor);
+	}
+	
+	public Sensor getSensor(String name)
+	{
+		return sensors.get(name);
 	}
 	
 	public Map<String, SensorResult> pullSensors()
@@ -46,5 +50,10 @@ public class Sensors
 	public Map<String, SensorResult> getLastResults()
 	{
 		return Collections.unmodifiableMap(lastPull);
+	}
+	
+	public SensorData getData(String sensorName)
+	{
+		return new SensorData(sensors.get(sensorName), lastPull.get(sensorName), lastResult.get(sensorName));
 	}
 }

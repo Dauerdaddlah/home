@@ -1,377 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ventilation System Control</title>
-    <!-- Use Tailwind CSS for styling without a build step -->
-    <!--script src="https://cdn.tailwindcss.com"></script-->
-    <script src="tailwind.js"></script>
-    <style>
-        /* Custom styles for the range slider for better visual feedback */
-        .slider-wrapper {
-            position: relative;
-            width: 100%;
-            height: 2rem;
-            margin-top: 2rem;
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 8px;
-            /* Using a CSS variable for the background fill color */
-            background: linear-gradient(to right, var(--thumb-color) 0%, var(--thumb-color) 0%, #d1d5db 0%, #d1d5db 100%);
-            border-radius: 9999px;
-            outline: none;
-            cursor: pointer;
-            position: absolute;
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%);
-            z-index: 10;
-            /* Define a custom property for the thumb color */
-            --thumb-color: #93c5fd;
-        }
-
-        /* Use the CSS variable to set the thumb color */
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            background: var(--thumb-color);
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 0 1px var(--thumb-color);
-            transition: background-color 0.2s;
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
-            background: var(--thumb-color);
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 0 1px var(--thumb-color);
-            transition: background-color 0.2s;
-        }
-
-        .dynamic-label {
-            position: absolute;
-            top: -2.5rem;
-            transform: translateX(-50%);
-            padding: 0.25rem 0.75rem;
-            color: white;
-            font-weight: bold;
-            border-radius: 9999px;
-            white-space: nowrap;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s, transform 0.2s, background-color 0.2s;
-        }
-
-        .slider-wrapper:hover .dynamic-label {
-            opacity: 1;
-        }
-
-        /* The styles for the fixed labels are removed. */
-        .slider-labels {
-            display: none;
-        }
-    </style>
+    <!-- 
+        This is the CSS for the application. All styling is self-contained and does not use any
+        external frameworks or stylesheets. The design is simple, modern, and responsive.
+    -->
+    <link rel="stylesheet" href="style.css">
 </head>
-
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 font-sans">
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg space-y-8">
-        <h1 class="text-3xl font-bold text-gray-800 text-center">Ventilation System Control Panel</h1>
-
-        <!-- Image for the ventilation icon with a fallback to a clean SVG -->
-        <div class="flex justify-center my-6">
-            <img id="ventilationImage" src="ventilation.png" alt="Ventilation System" class="w-36 h-36 text-gray-800" />
-        </div>
-
-        <div class="flex justify-center flex-col items-center my-6">
-            <div id="intervalDisplay" class="mt-4 text-xl font-semibold text-gray-700">00:00</div>
-        </div>
-
-        <!-- Section with the slider to change the state and a new interval input -->
-        <div class="space-y-4">
-            <!-- Slider for the ventilation state -->
-            <div class="slider-wrapper">
-                <span id="stateSliderValueLabel" class="dynamic-label">Standard</span>
-                <input type="range" id="stateSlider" min="0" max="4" value="0" step="1">
-            </div>
-
-            <!-- Error message display area -->
-            <div id="errorMessage"
-                class="text-red-500 font-medium text-center transition-all duration-300 transform-gpu opacity-0 h-0 overflow-hidden">
-            </div>
-
-
-            <!-- Slider for the interval in minutes with visible ticks -->
-            <div class="mt-16">
-                <label for="intervalSlider" class="block text-sm font-medium text-gray-700 text-center mb-4">Interval in
-                    Minutes</label>
-                <div class="slider-wrapper">
-                    <span id="intervalSliderValueLabel" class="dynamic-label">5 Minutes</span>
-                    <input type="range" id="intervalSlider" min="0" max="17" value="4" step="1">
+<body>
+    <div class="container" id="app-container">
+        <h1>Ventilation System Control</h1>
+        
+        <!-- Section to display the current state of the system -->
+        <div class="section">
+            <h2>System Status</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <!-- Temperature Icon (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 0c-2.485 0-4.5 2.015-4.5 4.5v9c0 2.485 2.015 4.5 4.5 4.5s4.5-2.015 4.5-4.5v-9c0-2.485-2.015-4.5-4.5-4.5zm0 17c-1.38 0-2.5-1.12-2.5-2.5v-9c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v9c0 1.38-1.12 2.5-2.5 2.5zM12 18.5c-.276 0-.5.224-.5.5v2.5c0 .276.224.5.5.5s.5-.224.5-.5v-2.5c0-.276-.224-.5-.5-.5z"/></svg>
+                    <p>Temp: <span id="temp-display">--</span>°C</p>
+                </div>
+                <div class="status-item">
+                    <!-- Humidity Icon (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 1.01c-4.996 0-9 4.004-9 9 0 7.214 7.214 12.981 9 12.981 1.786 0 9-5.767 9-12.981 0-4.996-4.004-9-9-9zM12 20.98c-2.476 0-4.502-1.442-4.502-3.214 0-1.286 1.838-2.614 4.502-3.155 2.664.541 4.502 1.869 4.502 3.155 0 1.772-2.026 3.214-4.502 3.214zM12 16.5c-1.104 0-2-.896-2-2v-4c0-1.104.896-2 2-2s2 .896 2 2v4c0 1.104-.896 2-2 2z"/></svg>
+                    <p>Humidity: <span id="humidity-display">--</span>%</p>
+                </div>
+                <div class="status-item">
+                    <!-- Filter Icon (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 6.5l-4-4v10.5h-4v-10.5l-4 4-2-2 6-6 6 6zM15 11h-4v10.5h4v-10.5zM22 17h-4v4h4v-4zM8 11h-4v10.5h4v-10.5z"/></svg>
+                    <p>Filter Life: <span id="filter-display">--</span>%</p>
                 </div>
             </div>
+            
+            <p class="status-display" style="text-align: center; margin-top: 20px;">Current Mode: <span id="current-state-display">Loading...</span></p>
+            <p id="system-response" class="log-message" style="text-align: center;">Awaiting commands...</p>
+        </div>
 
-            <button id="updateStateButton"
-                class="w-full py-3 mt-8 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all duration-200 active:scale-95 disabled:bg-gray-400">
-                Update State
+        <!-- Section for user input and controls -->
+        <div class="section">
+            <h2>Control Panel</h2>
+            <div class="slider-container">
+                <input type="range" id="state-slider" min="0" max="4" value="0">
+                <p>Selected State: <span id="slider-value">Off</span></p>
+            </div>
+            
+            <div class="input-group" style="margin-top: 25px;">
+                <label for="interval-input">Set Interval (minutes):</label>
+                <input type="number" id="interval-input" placeholder="e.g., 30" min="1" value="30">
+            </div>
+
+            <button id="send-command-button" style="margin-top: 25px;">Set State with Interval</button>
+        </div>
+
+        <!-- New section for manual level control, now collapsible -->
+        <div class="section">
+            <button class="collapsible" id="manual-level-toggle">
+                Manual Level Control 
+                <svg class="collapsible-caret" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </button>
+            <div class="collapsible-content">
+                <div class="input-group" style="padding-top: 20px;">
+                    <label for="level-input">Set Level:</label>
+                    <input type="number" id="level-input" placeholder="e.g., 3" min="1" max="100" value="50">
+                </div>
+                <button id="send-level-button" style="margin: 25px 0;">Set Level</button>
+            </div>
+        </div>
+
+        <!-- New section for settings -->
+        <div class="section">
+            <h2>Settings</h2>
+            <div class="settings-grid">
+                <div class="input-group">
+                    <label for="start1-input">Start 1:</label>
+                    <input type="number" id="start1-input" min="0" max="100" value="20">
+                </div>
+                <div class="input-group">
+                    <label for="end1-input">End 1:</label>
+                    <input type="number" id="end1-input" min="0" max="100" value="15">
+                </div>
+                <div class="input-group">
+                    <label for="start2-input">Start 2:</label>
+                    <input type="number" id="start2-input" min="0" max="100" value="40">
+                </div>
+                <div class="input-group">
+                    <label for="end2-input">End 2:</label>
+                    <input type="number" id="end2-input" min="0" max="100" value="35">
+                </div>
+                <div class="input-group">
+                    <label for="start3-input">Start 3:</label>
+                    <input type="number" id="start3-input" min="0" max="100" value="60">
+                </div>
+                <div class="input-group">
+                    <label for="end3-input">End 3:</label>
+                    <input type="number" id="end3-input" min="0" max="100" value="55">
+                </div>
+            </div>
+            <button id="send-settings-button" style="margin-top: 25px;">Send Settings</button>
         </div>
     </div>
 
-    <!-- JavaScript for client-side logic -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // DOM element references
-            const stateSlider = document.getElementById('stateSlider');
-            const stateSliderValueLabel = document.getElementById('stateSliderValueLabel');
-            const intervalSlider = document.getElementById('intervalSlider');
-            const intervalSliderValueLabel = document.getElementById('intervalSliderValueLabel');
-            const updateStateButton = document.getElementById('updateStateButton');
-            const ventilationImage = document.getElementById('ventilationImage');
-            const intervalDisplay = document.getElementById('intervalDisplay'); // New reference for the interval display label
-
-            // SVG code to use as a fallback if the PNG is not found
-            const fallbackSvg = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-36 h-36 text-gray-800">
-                    <circle cx="12" cy="12" r="10" />
-                </svg>
-            `;
-
-            // --- Countdown Timer Variables ---
-            let countdownInterval;
-            let currentIntervalSeconds;
-
-            // Set up the fallback for the image
-            ventilationImage.onerror = () => {
-                const imageParent = ventilationImage.parentNode;
-                if (imageParent) {
-                    imageParent.innerHTML = fallbackSvg;
-                }
-            };
-
-            // Map state values (0-4) to human-readable names and colors
-            const stateNames = ['Standard', 'Aus', '1', '2', '3'];
-            const stateColors = ['#93c5fd', '#6b7280', '#22c55e', '#eab308', '#ef4444']; // Light blue, Gray, Green, Yellow, Red
-
-            // Map the interval slider values to the actual minute values
-            const intervalValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 30, 45, 60];
-
-            // --- API Endpoints (Relative URLs) ---
-            const setStateUrl = 'set-state';
-            const statusUrl = 'status';
-
-            // Function to update the state slider's dynamic label and fill
-            const updateStateSliderUI = () => {
-                const sliderValue = parseInt(stateSlider.value);
-                const sliderWidth = stateSlider.offsetWidth;
-                const thumbPosition = (sliderValue / (stateSlider.max - stateSlider.min)) * sliderWidth;
-
-                // Get the color for the current state
-                const currentColor = stateColors[sliderValue];
-
-                // Update the dynamic label's text, position, and color
-                stateSliderValueLabel.textContent = stateNames[sliderValue];
-                stateSliderValueLabel.style.left = `${thumbPosition}px`;
-                stateSliderValueLabel.style.opacity = '1';
-                stateSliderValueLabel.style.backgroundColor = currentColor;
-
-                // Update the slider's background and thumb to create the fill effect
-                const fillPercentage = (sliderValue / (stateSlider.max - stateSlider.min)) * 100;
-                stateSlider.style.background = `linear-gradient(to right, ${currentColor} ${fillPercentage}%, #d1d5db ${fillPercentage}%)`;
-
-                // Update the CSS variable for the thumb color
-                stateSlider.style.setProperty('--thumb-color', currentColor);
-            };
-
-            // New function to format and display the interval
-            const formatTime = (totalSeconds) => {
-                if (totalSeconds < 0) totalSeconds = 0; // Prevent negative time
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-
-                const formattedMinutes = String(minutes).padStart(2, '0');
-                const formattedSeconds = String(seconds).padStart(2, '0');
-
-                // If hours are present, display them, otherwise just minutes and seconds
-                if (hours > 0) {
-                    const formattedHours = String(hours).padStart(2, '0');
-                    return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-                } else {
-                    return `${formattedMinutes}:${formattedSeconds}`;
-                }
-            };
-
-            // New function to start the countdown
-            const startCountdown = (initialSeconds) => {
-                stopCountdown(); // Clear any existing timer
-                currentIntervalSeconds = initialSeconds;
-
-                // Immediately update the display
-                intervalDisplay.textContent = formatTime(currentIntervalSeconds);
-
-                // Start a new interval to update the display every second
-                countdownInterval = setInterval(() => {
-                    currentIntervalSeconds--;
-                    intervalDisplay.textContent = formatTime(currentIntervalSeconds);
-
-                    // Stop the timer when it reaches 0
-                    if (currentIntervalSeconds <= 0) {
-                        stopCountdown();
-                        // You might want to re-fetch the state here or handle the "end" of the interval
-                    }
-                }, 1000);
-            };
-
-            // New function to stop the countdown
-            const stopCountdown = () => {
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                }
-            };
-
-            // Function to update the interval slider's dynamic label and fill
-            const updateIntervalSliderUI = () => {
-                const sliderValue = parseInt(intervalSlider.value);
-                const sliderWidth = intervalSlider.offsetWidth;
-                const thumbPosition = (sliderValue / (intervalSlider.max - intervalSlider.min)) * sliderWidth;
-
-                // Get the correct minute value from the array
-                const minuteValue = intervalValues[sliderValue];
-
-                // Update the dynamic label's text, position, and color
-                intervalSliderValueLabel.textContent = `${minuteValue} Minutes`;
-                intervalSliderValueLabel.style.left = `${thumbPosition}px`;
-                intervalSliderValueLabel.style.opacity = '1';
-                intervalSliderValueLabel.style.backgroundColor = '#93c5fd'; // Use a consistent color for the interval slider
-
-                // Update the slider's background and thumb
-                const fillPercentage = (sliderValue / (intervalSlider.max - intervalSlider.min)) * 100;
-                intervalSlider.style.background = `linear-gradient(to right, #93c5fd ${fillPercentage}%, #d1d5db ${fillPercentage}%)`;
-                intervalSlider.style.setProperty('--thumb-color', '#93c5fd');
-
-                updateStateButton.disabled = (intervalSlider.value == 0);
-            };
-
-            // Function to show and hide error messages
-            const showErrorMessage = (message) => {
-                errorMessage.textContent = message;
-                errorMessage.classList.remove('opacity-0', 'h-0');
-                errorMessage.classList.add('opacity-100', 'h-auto');
-            };
-
-            const hideErrorMessage = () => {
-                errorMessage.classList.remove('opacity-100', 'h-auto');
-                errorMessage.classList.add('opacity-0', 'h-0');
-            };
-
-            // Function to send a new state to the server
-            const sendNewState = async () => {
-                const newStateValue = parseInt(stateSlider.value);
-                // Convert the interval from minutes to seconds
-                const newIntervalValueInSeconds = intervalValues[parseInt(intervalSlider.value)] * 60;
-
-                // Validate that the interval is greater than 0
-                if (newIntervalValueInSeconds === 0) {
-                    showErrorMessage('Interval must be greater than 0 minutes.');
-                    return;
-                }
-
-                console.log(`Updating state to "${stateNames[newStateValue]}" with an interval of ${newIntervalValueInSeconds} seconds...`);
-                updateStateButton.disabled = true;
-
-                try {
-                    const response = await fetch(setStateUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ state: newStateValue, interval: newIntervalValueInSeconds })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    console.log(`State successfully set to "${stateNames[newStateValue]}"`);
-
-                    fetchCurrentState();
-                } catch (error) {
-                    console.error('Error updating state:', error);
-                } finally {
-                    updateStateButton.disabled = false;
-                }
-            };
-
-            // Function to fetch the initial state of the system
-            const fetchCurrentState = async () => {
-                try {
-                    const response = await fetch(statusUrl, {
-                        method: 'GET'
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    // Update sliders with the fetched values
-                    stateSlider.value = data.state;
-
-                    // Convert the received interval from seconds back to minutes
-                    const intervalInMinutes = data.interval / 60;
-
-                    // Find the highest interval value in our array that is less than or equal to the fetched interval
-                    let selectedIntervalIndex = 0;
-                    for (let i = 0; i < intervalValues.length; i++) {
-                        if (intervalValues[i] <= intervalInMinutes) {
-                            selectedIntervalIndex = i;
-                        } else {
-                            // Since the array is sorted, we can break once we find a value that's too high
-                            break;
-                        }
-                    }
-
-                    intervalSlider.value = selectedIntervalIndex;
-
-                    // Update the UI to reflect the new slider positions
-                    updateStateSliderUI();
-                    updateIntervalSliderUI();
-
-                    // Start the countdown with the fetched interval
-                    startCountdown(data.interval);
-                } catch (error) {
-                    console.error('Error fetching current state:', error);
-                }
-            };
-
-            // Event listeners
-            updateStateButton.addEventListener('click', sendNewState);
-            stateSlider.addEventListener('input', updateStateSliderUI);
-            intervalSlider.addEventListener('input', updateIntervalSliderUI);
-
-            // Add a resize event listener to update the label position
-            window.addEventListener('resize', () => {
-                updateStateSliderUI();
-                updateIntervalSliderUI();
-            });
-
-            // Fetch the initial state when the page loads
-            fetchCurrentState();
-        });
-    </script>
+    <script src="main.js"></script>
 </body>
-
 </html>

@@ -2,9 +2,8 @@ package de.ddd.aircontrol.control;
 
 import java.util.Objects;
 
-import de.ddd.aircontrol.sensor.Sensors;
+import de.ddd.aircontrol.Env;
 import de.ddd.aircontrol.ventilation.Level;
-import de.ddd.aircontrol.ventilation.Ventilation;
 
 public class ControllerManual implements Controller
 {
@@ -20,7 +19,7 @@ public class ControllerManual implements Controller
 	}
 	
 	@Override
-	public Level check(Ventilation ventilation, Sensors sensors)
+	public Level check(Env env)
 	{
 		if(destLevel != null)
 		{
@@ -41,7 +40,7 @@ public class ControllerManual implements Controller
 			}
 		}
 		
-		return next.check(ventilation, sensors);
+		return next.check(env);
 	}
 	
 	public void setDestLevelFor(Level destLevel, long time)
