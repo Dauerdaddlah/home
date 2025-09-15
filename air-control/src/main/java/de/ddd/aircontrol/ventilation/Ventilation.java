@@ -84,6 +84,8 @@ public class Ventilation
 		Configuration config = configurations.get(level);
 		
 		configure(config);
+		
+		this.level = level;
 	}
 	
 	public Level getLevel()
@@ -106,6 +108,8 @@ public class Ventilation
 		Configuration config = bridgeConfigurations.get(bridgeLevel);
 		
 		configure(config);
+		
+		this.bridgeLevel = bridgeLevel;
 	}
 	
 	public Level getBridgeLevel()
