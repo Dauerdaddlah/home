@@ -41,22 +41,27 @@
 
         <!-- Section for user input and controls -->
         <div class="section">
-            <h2>Control Panel</h2>
-            <div class="slider-container">
-                <input type="range" id="state-slider" min="0" max="4" value="0">
-                <p>Selected State: <span id="slider-value">Off</span></p>
-            </div>
-            
-            <div class="input-group" style="margin-top: 25px;">
-                <label for="interval-input">Set Interval (minutes):</label>
-                <input type="number" id="interval-input" placeholder="e.g., 30" min="1" value="30">
-            </div>
+            <button class="collapsible" id="manual-level-toggle">
+                Control Panel 
+                <svg class="collapsible-caret" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <div class="collapsible-content">
+                <div class="slider-container" style="margin-top: 45px;">
+                    <input type="range" id="state-slider" min="0" max="4" value="0">
+                    <p>Selected State: <span id="slider-value">Off</span></p>
+                </div>
+                
+                <div class="input-group" style="margin-top: 10px;">
+                    <label for="interval-input">Set Interval (minutes):</label>
+                    <input type="number" id="interval-input" placeholder="e.g., 30" min="1" value="30">
+                </div>
 
-            <button id="send-command-button" style="margin-top: 25px;">Set State with Interval</button>
+                <button id="send-command-button" style="margin-top: 25px;">Set State with Interval</button>
+            </div>
         </div>
 
         <!-- New section for manual level control, now collapsible -->
-        <div class="section">
+        <!--div class="section">
             <button class="collapsible" id="manual-level-toggle">
                 Manual Level Control 
                 <svg class="collapsible-caret" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
@@ -68,10 +73,10 @@
                 </div>
                 <button id="send-level-button" style="margin: 25px 0;">Set Level</button>
             </div>
-        </div>
+        </div-->
 
         <!-- New section for settings -->
-        <div class="section">
+        <!--div class="section">
             <h2>Settings</h2>
             <div class="settings-grid">
                 <div class="input-group">
@@ -100,7 +105,7 @@
                 </div>
             </div>
             <button id="send-settings-button" style="margin-top: 25px;">Send Settings</button>
-        </div>
+        </div-->
     </div>
 
     <script src="main.js"></script>

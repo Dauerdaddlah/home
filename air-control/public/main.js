@@ -48,7 +48,7 @@ const displayResponse = (message) => {
 const fetchSystemState = async () => {
     displayResponse('Fetching current system state...');
     try {
-        const response = await fetch('/state', { method: 'GET' });
+        const response = await fetch('/v1/state', { method: 'GET' });
         /*
         // Mock a GET request with a 1.5-second delay.
         const response = await new Promise(resolve => {
@@ -84,8 +84,15 @@ const fetchSystemState = async () => {
         humidityDisplay.textContent = data.humidity;
         
         stateSlider.value = data.level; // Set the slider to the fetched state
+
+        let interval = '--';
+
+        if(!isNaN(data.interval))
+        {
+            interval = `${(data.interval / 60 / 1000) | 0}:${((data.interval / 1000) % 60) | 0 }`;
+        }
         updateSliderDisplay();
-        displayResponse(`Received system state: "${systemStates[data.level]}", Temp: ${data.temperature}°C, Humid: ${data.humidity}%`);
+        displayResponse(`Received system state: "${systemStates[data.level]}", Temp: ${data.temperature}°C, Humid: ${data.humidity}%, interval: ${interval}`);
 
     } catch (error) {
         displayResponse(`Error fetching state: ${error.message}`);
@@ -107,39 +114,21 @@ const sendSystemCommand = async () => {
 
     // Prepare the data to be sent in the request body.
     const requestBody = {
-        state: selectedState,
-        interval: selectedInterval
+        level: selectedStateIndex,
+        interval: selectedInterval * 60 * 1000 // Convert minutes to milliseconds
     };
 
     displayResponse(`Sending command to set state to "${selectedState}" for ${selectedInterval} minutes...`);
 
     try {
         // Mock a POST request with a 2-second delay.
-        const response = await new Promise(resolve => {
-            setTimeout(() => {
-                // Simulate a successful response
-                resolve({
-                    ok: true,
-                    json: () => Promise.resolve({
-                        success: true,
-                        new_state: selectedState,
-                        new_interval: selectedInterval,
-                        log: `Command received: set to ${selectedState} for ${selectedInterval} min`
-                    })
-                });
-            }, 2000);
-        });
+        const response = await fetch("/v1/state", { method: 'PUT', body: JSON.stringify(requestBody) });
 
         if (!response.ok) {
             throw new Error('Server responded with an error');
         }
 
-        const data = await response.json();
-        displayResponse(`Server response: "${data.log}"`);
-        
-        // Update the displayed current state with the new state from the server.
-        currentStateDisplay.textContent = data.new_state;
-
+        fetchSystemState();
     } catch (error) {
         displayResponse(`Error sending command: ${error.message}`);
     }
@@ -257,8 +246,8 @@ const sendSettingsCommand = async () => {
 // Add event listeners for user interaction.
 stateSlider.addEventListener('input', updateSliderDisplay);
 sendCommandButton.addEventListener('click', sendSystemCommand);
-sendLevelButton.addEventListener('click', sendManualLevel); // Event listener for the new button
-sendSettingsButton.addEventListener('click', sendSettingsCommand);
+// sendLevelButton.addEventListener('click', sendManualLevel); // Event listener for the new button
+// sendSettingsButton.addEventListener('click', sendSettingsCommand);
 
 // Event listener for the collapsible section
 manualLevelToggle.addEventListener('click', () => {
