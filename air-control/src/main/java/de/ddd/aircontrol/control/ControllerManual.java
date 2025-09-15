@@ -28,7 +28,7 @@ public class ControllerManual implements Controller
 				// level explicitely set for always
 				return destLevel;
 			}
-			else if(until > System.currentTimeMillis())
+			else if(until < System.currentTimeMillis())
 			{
 				// time run out -> revert state
 				destLevel = null;
