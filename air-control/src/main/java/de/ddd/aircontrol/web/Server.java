@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import com.google.gson.Gson;
 
 import de.ddd.aircontrol.Env;
+import de.ddd.aircontrol.event.Event;
 import de.ddd.aircontrol.pi.PiPin;
 import de.ddd.aircontrol.pi.PinMode;
 import de.ddd.aircontrol.sensor.Sensor;
@@ -81,38 +82,6 @@ public class Server
 	{
 		return ctx.get();
 	}
-	
-	private <T> T getData(EventFunction<T> action)
-	{
-		CompletableFuture<T> f = new CompletableFuture<>();
-		
-		eventQueue.accessEnv(env ->
-			{
-				try
-				{
-					f.complete(action.apply(env));
-				}
-				catch(Exception e)
-				{
-					f.completeExceptionally(e);
-				}
-			});
-		
-		try
-		{
-			return f.get(10, TimeUnit.SECONDS);
-		}
-		catch(Exception e)
-		{
-			Thread.interrupted();
-			throw new RuntimeException(e);
-		}
-	}
-	
-//	public static void main(String[] args)
-//	{
-//		new Server(8080);
-//	}
 	
 	public List<HttpSensor> reqGetAllSensors(Env env) throws Exception
 	{
@@ -364,6 +333,8 @@ public class Server
 			{
 				env.controllerManual().setDestLevel(dest);
 			}
+			
+			eventQueue.addEvent(new Event(eventQueue::checkAll));
 		}
 		
 		return reqGetState(env);
@@ -371,9 +342,9 @@ public class Server
 	
 	private class EnvHandler implements Handler
 	{
-		private final EventFunction<?> action;
+		private final EventFunction<Object> action;
 		
-		public EnvHandler(EventFunction<?> action)
+		public EnvHandler(EventFunction<Object> action)
 		{
 			this.action = action;
 		}
@@ -381,22 +352,33 @@ public class Server
 		@Override
 		public void handle(@NotNull Context ctx) throws Exception
 		{
-			Server.this.ctx.set(ctx);
-			try
-			{
-				Object res = getData(action);
-				
-				if(res != null)
+			CompletableFuture<Object> f = new CompletableFuture<>();
+			
+			eventQueue.accessEnv(env ->
 				{
-					ctx.result(gson.toJson(res));
-				}
-				
-				ctx.status(HttpStatus.OK);
-			}
-			finally
+					Server.this.ctx.set(ctx);
+					try
+					{
+						f.complete(action.apply(env));
+					}
+					catch(Exception e)
+					{
+						f.completeExceptionally(e);
+					}
+					finally
+					{
+						Server.this.ctx.set(null);
+					}
+				});
+			
+			Object res = f.get(10, TimeUnit.SECONDS);
+			
+			if(res != null)
 			{
-				Server.this.ctx.set(null);
+				ctx.result(gson.toJson(res));
 			}
+			
+			ctx.status(HttpStatus.OK);
 		}
 	}
 	
