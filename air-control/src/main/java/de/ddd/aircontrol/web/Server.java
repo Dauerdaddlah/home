@@ -305,7 +305,7 @@ public class Server
 	{
 		SensorData s = env.sensor("bath");
 		
-		SensorResult res = s == null ? new SensorResult() : s.lastResult();
+		SensorResult res = s == null || s.lastResult() == null ? new SensorResult() : s.lastResult();
 		
 		long until = env.controllerManual().getUntil();
 		long interval = until - System.currentTimeMillis();
