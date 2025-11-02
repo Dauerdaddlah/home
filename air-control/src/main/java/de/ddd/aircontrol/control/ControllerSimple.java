@@ -53,8 +53,8 @@ public class ControllerSimple implements Controller
 		
 		if(res == null || !res.hasHumidity())
 		{
-			log.debug("no bath data to process, abort");
-			return lastLevel;
+			log.debug("no bath data to process, revert to off");
+			return Level.OFF;
 		}
 		
 		int h = (int)res.humidity();

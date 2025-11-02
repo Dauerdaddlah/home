@@ -2,11 +2,16 @@ package de.ddd.aircontrol.control;
 
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.ddd.aircontrol.Env;
 import de.ddd.aircontrol.ventilation.Level;
 
 public class ControllerManual implements Controller
 {
+	private static final Logger log = LoggerFactory.getLogger(ControllerManual.class);
+	
 	private Level destLevel = null;
 	/** time in ms when the manual set should be reverted */
 	private long until = 0;
@@ -25,6 +30,7 @@ public class ControllerManual implements Controller
 		{
 			if(until == 0)
 			{
+				log.trace("level manually locked to {}", destLevel);
 				// level explicitely set for always
 				return destLevel;
 			}
@@ -35,6 +41,7 @@ public class ControllerManual implements Controller
 			}
 			else
 			{
+				log.trace("level manually set to {} until {}", destLevel, until);
 				// timed set still active
 				return destLevel;
 			}
