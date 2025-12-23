@@ -1,6 +1,5 @@
 package de.ddd.aircontrol;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -10,10 +9,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.ddd.aircontrol.cleaning.Cleanings;
+import de.ddd.aircontrol.cleaning.VentilatorCleaning;
 import de.ddd.aircontrol.control.Controller;
 import de.ddd.aircontrol.control.ControllerSimple;
-import de.ddd.aircontrol.datalog.DataLogger;
-import de.ddd.aircontrol.datalog.DataLoggerFileDaily;
+import de.ddd.aircontrol.db.DB;
+import de.ddd.aircontrol.db.Repository;
 import de.ddd.aircontrol.event.Event;
 import de.ddd.aircontrol.event.EventAction;
 import de.ddd.aircontrol.event.EventQueue;
@@ -58,6 +59,8 @@ public class AirControl implements ServerEventQueue
 	
 	public static final String SETTING_PI_MODEL = SETTING_PI_PREFIX + "model";
 	
+	public static final String SETTING_DB_PATH = SETTING_PREFIX + "db.path";
+	
 	public static final String SETTING_DATA_PREFIX = SETTING_PREFIX + "data.";
 	public static final String SETTING_DATA_LOG = SETTING_DATA_PREFIX + "log";
 	public static final String SETTING_DATA_MAXSIZE = SETTING_DATA_PREFIX + "maxsize";
@@ -96,15 +99,21 @@ public class AirControl implements ServerEventQueue
 	
 	public static final String SETTING_CHECK_INTERVAL = SETTING_PREFIX + "check.interval";
 	
+	public static final String SETTING_CLEANING_PREFIX = SETTING_PREFIX + "cleaning.";
+	public static final String SETTING_CLEANING_NAME_POSTFIX = ".name";
+	public static final String SETTING_CLEANING_INTERVAL_POSTFIX = ".interval";
+	public static final String SETTING_CLEANING_REPLACEINTERVAL_POSTFIX = ".replaceInterval";
+	
 	private final EventQueue events;
 	
 	private final Settings settings;
 	private final Pi pi;
-	private final DataLogger dataLogger;
 	private final Sensors sensors;
 	private final Ventilation ventilation;
 	private final Controller controller;
 //	private final Server server;
+	private final Repository repo;
+	private final Cleanings cleanings;
 	private final Env env;
 	
 	public AirControl()
@@ -132,23 +141,47 @@ public class AirControl implements ServerEventQueue
 			}
 		}
 		
-		log.debug("create data logger");
-//		dataLogger = new DataLoggerFile(
-//				Paths.get(settings.getString(SETTING_DATA_LOG, "./log/data.log")),
-//				settings.getLong(SETTING_DATA_MAXSIZE, 1024 * 1024 * 10),
-//				settings.getInt(SETTING_DATA_COUNT, 10));
+		log.debug("create db");
 		try
 		{
-			dataLogger = new DataLoggerFileDaily(
-					Paths.get(settings.getString(SETTING_DATA_LOG, "./log/")));
+			DB db = new DB(Paths.get(settings.getString(SETTING_DB_PATH, "aircontrol.db")));
+			repo = new Repository(db);
 		}
-		catch (IOException e)
+		catch(Exception e)
 		{
 			throw new RuntimeException(e);
 		}
 		
+		cleanings = new Cleanings(repo);
+		
+		for(int i = 1; true; i++)
+		{
+			String name = settings.getString(SETTING_CLEANING_PREFIX + i + SETTING_CLEANING_NAME_POSTFIX, "");
+			String interval = settings.getString(SETTING_CLEANING_PREFIX + i + SETTING_CLEANING_INTERVAL_POSTFIX, "");
+			int replaceInterval = settings.getInt(SETTING_CLEANING_PREFIX + i + SETTING_CLEANING_REPLACEINTERVAL_POSTFIX, -1);
+			
+			if(name.isEmpty() || interval.isEmpty())
+			{
+				break;
+			}
+			
+			String[] split = interval.split("[.]{2}");
+			
+			int intervalMin = Integer.parseInt(split[0]);
+			int intervalMax = intervalMin;
+			
+			if(split.length > 1)
+			{
+				intervalMax = Integer.parseInt(split[1]);
+			}
+			
+			VentilatorCleaning c = new VentilatorCleaning(i, name, intervalMin, intervalMax, replaceInterval);
+			cleanings.addCleaning(c);
+		}
+		cleanings.loadLast();
+		
 		log.debug("load sensors");
-		sensors = new Sensors();
+		sensors = new Sensors(repo);
 		for(String name : settings.getString(SETTING_SENSOR_NAMES, "bath").split("[,]"))
 		{
 			name = name.trim();
@@ -177,6 +210,7 @@ public class AirControl implements ServerEventQueue
 				}
 			}
 		}
+		sensors.loadLast();
 		
 		log.debug("create ventilation");
 		ventilation = new Ventilation(pi, getConfigurations(settings, "normal"), getConfigurations(settings, "bridge"),
@@ -208,7 +242,7 @@ public class AirControl implements ServerEventQueue
 			new Server(port, this);
 		}
 		
-		env = new Env(sensors, pi, settings, ventilation, controller);
+		env = new Env(sensors, pi, cleanings, settings, ventilation, controller);
 	}
 
 	private EnumMap<Level, Configuration> getConfigurations(Settings settings, String type)
@@ -313,12 +347,7 @@ public class AirControl implements ServerEventQueue
 	public void checkAll(EventQueue queue, Event e) throws Exception
 	{
 		log.info("check all");
-		var results = sensors.pullSensors();
-		
-		for(String key : results.keySet())
-		{
-			dataLogger.log(key, results.get(key));
-		}
+		sensors.pullSensors();
 		
 		Level nextLevel = env.controllerManual().check(env);
 		

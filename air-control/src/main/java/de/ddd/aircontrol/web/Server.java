@@ -1,5 +1,6 @@
 package de.ddd.aircontrol.web;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -8,9 +9,11 @@ import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import de.ddd.aircontrol.Env;
 import de.ddd.aircontrol.event.Event;
+import de.ddd.aircontrol.gson.LocalDateTimeAdapter;
 import de.ddd.aircontrol.pi.PiPin;
 import de.ddd.aircontrol.pi.PinMode;
 import de.ddd.aircontrol.sensor.Sensor;
@@ -41,13 +44,19 @@ public class Server
 	{
 		this.eventQueue = eventQueue;
 		this.ctx = new ThreadLocal<>();
-		gson = new Gson();
+		gson = new GsonBuilder()
+				.registerTypeHierarchyAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+				.create();
 		
 		app = Javalin.create(this::configure);
 		
 		app.get("/v1/sensor", new EnvHandler(this::reqGetAllSensors));
 		app.get("/v1/sensor/{sensor}", new EnvHandler(this::reqGetSensor));
 		app.put("/v1/sensor/{sensor}", new EnvHandler(this::reqSetSensor));
+		
+		app.get("/v1/cleaning", new EnvHandler(this::reqGetAllCleanings));
+		app.get("/v1/cleaning/{number}", new EnvHandler(this::reqGetCleaning));
+		app.post("/v1/cleaning/{number}", new EnvHandler(this::reqCleaningDone));
 		
 		app.get("/v1/setting", new EnvHandler(this::reqGetAllSettings));
 		app.get("/v1/setting/{setting}", new EnvHandler(this::reqGetSetting));
@@ -87,8 +96,12 @@ public class Server
 	{
 		List<HttpSensor> ret = new ArrayList<>();
 		
-		env.sensors().getLastResults().forEach((name, res) ->
-				ret.add(new HttpSensor(name, String.valueOf(res.temperature()), String.valueOf(res.humidity()))));
+		env.sensors().getSensorNames().stream()
+			.map(env::sensor)
+			.forEach(sd ->
+				ret.add(new HttpSensor(sd.name(),
+						sd.lastResult() == null ? "invalid" : String.valueOf(sd.lastResult().temperature()),
+						sd.lastResult() == null ? "invalid" : String.valueOf(sd.lastResult().humidity()))));
 		
 		return ret;
 	}
@@ -139,6 +152,84 @@ public class Server
 		}
 		
 		return reqGetSensor(env);
+	}
+	
+	public List<HttpCleaning> reqGetAllCleanings(Env env) throws Exception
+	{
+		List<HttpCleaning> ret = new ArrayList<>();
+		
+		for(int i = 0; i < env.cleanings().getCleanings().size(); i++)
+		{
+			int number = i + 1;
+			var c = env.cleaning(number);
+			
+			HttpCleaning hc = new HttpCleaning(
+					c.getNumber(),
+					c.getName(),
+					c.getIntervalMin(),
+					c.getIntervalMax(),
+					c.getReplacementInterval(),
+					c.getLastCleaning(),
+					c.getLastReplacement(),
+					c.getCleaningsWithoutReplacement());
+			
+			ret.add(hc);
+		}
+		
+		return ret;
+	}
+	
+	public HttpCleaning reqGetCleaning(Env env) throws Exception
+	{
+		int number = Integer.parseInt(ctx().pathParam("number"));
+		var c = env.cleaning(number);
+		
+		return new HttpCleaning(
+				c.getNumber(),
+				c.getName(),
+				c.getIntervalMin(),
+				c.getIntervalMax(),
+				c.getReplacementInterval(),
+				c.getLastCleaning(),
+				c.getLastReplacement(),
+				c.getCleaningsWithoutReplacement());
+	}
+	
+	public HttpCleaning reqCleaningDone(Env env) throws Exception
+	{
+		int number = Integer.parseInt(ctx().pathParam("number"));
+		var c = env.cleaning(number);
+		
+		boolean replaced = false;
+		LocalDateTime ldt = LocalDateTime.now();
+		
+		String body = ctx().body();
+		if(body != null && !body.isEmpty())
+		{
+			HttpCleaningDoneData data = gson.fromJson(body, HttpCleaningDoneData.class);
+			
+			if(data.replaced != null)
+			{
+				replaced = data.replaced;
+			}
+			
+			if(data.ldt != null)
+			{
+				ldt = data.ldt;
+			}
+		}
+		
+		env.cleanings().cleaningDone(ldt, number, replaced);
+		
+		return new HttpCleaning(
+				c.getNumber(),
+				c.getName(),
+				c.getIntervalMin(),
+				c.getIntervalMax(),
+				c.getReplacementInterval(),
+				c.getLastCleaning(),
+				c.getLastReplacement(),
+				c.getCleaningsWithoutReplacement());
 	}
 	
 	public List<HttpSetting> reqGetAllSettings(Env env)
@@ -414,6 +505,26 @@ public class Server
 			String humidity,
 			/** remaining time in ms */
 			Integer interval
+			)
+	{
+	}
+	
+	public static record HttpCleaning(
+			int number,
+			String name,
+			int intervalMin,
+			int intervalMax,
+			int replacementInterval,
+			LocalDateTime lastCleaning,
+			LocalDateTime lastReplacement,
+			int cleaningsWithoutReplacement
+			)
+	{
+	}
+	
+	public static record HttpCleaningDoneData(
+			Boolean replaced,
+			LocalDateTime ldt
 			)
 	{
 	}
