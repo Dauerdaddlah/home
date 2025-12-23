@@ -14,6 +14,7 @@
         "name": "RollingFileAppender",
         "fileName": "log/aircontrol.log",
         "filePattern": "log/aircontrol-%d{yyyy-MM-dd}-%i.log.gz",
+		"immediateFlush": false,
         "PatternLayout": {
           "pattern": "%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"
         },
