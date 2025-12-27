@@ -1,5 +1,6 @@
 package de.ddd.aircontrol.cleaning;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,11 +40,26 @@ public class Cleanings
 		
 		repo.create(c);
 		
-		cleaning.setLastCleaning(ldt);
+		if(cleaning.getLastCleaning() == null || ldt.isAfter(cleaning.getLastCleaning()))
+		{
+			cleaning.setLastCleaning(ldt);
+		}
 		
 		if(replaced)
 		{
-			cleaning.setLastReplacement(ldt);
+			if(cleaning.getLastReplacement() == null || ldt.isAfter(cleaning.getLastReplacement()))
+			{
+				cleaning.setLastReplacement(ldt);
+			}
+		}
+		
+		try
+		{
+			repo.getDb().commit();
+		}
+		catch (SQLException e)
+		{
+			log.error("Exception on db-commit", e);
 		}
 	}
 
