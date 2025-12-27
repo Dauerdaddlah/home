@@ -31,15 +31,15 @@
 
     "loggers": {
       "root": {
-        "level": "all",
-        "AppenderRef": [
-          { "ref": "Stdout" },
-          { "ref": "RollingFileAppender" }
-        ]
+        "level": "off"
       },
 	  "logger": {
-		"name": "org.eclipse.jetty",
-		"level": "off"
+		"name": "de.ddd.aircontrol",
+		"level": "info",
+		"AppenderRef": [
+		          { "ref": "Stdout" },
+		          { "ref": "RollingFileAppender" }
+		        ]
 	  }
     }
   }
