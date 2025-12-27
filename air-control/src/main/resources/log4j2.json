@@ -31,7 +31,11 @@
 
     "loggers": {
       "root": {
-        "level": "off"
+        "level": "error",
+		"AppenderRef": [
+				          { "ref": "Stdout" },
+				          { "ref": "RollingFileAppender" }
+				        ]
       },
 	  "logger": {
 		"name": "de.ddd.aircontrol",

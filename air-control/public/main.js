@@ -49,28 +49,6 @@ const fetchSystemState = async () => {
     displayResponse('Fetching current system state...');
     try {
         const response = await fetch('/v1/state', { method: 'GET' });
-        /*
-        // Mock a GET request with a 1.5-second delay.
-        const response = await new Promise(resolve => {
-            setTimeout(() => {
-                // Simulate a successful response with a random state and other data
-                const mockState = Math.floor(Math.random() * systemStates.length);
-                const mockTemp = (Math.random() * (25 - 18) + 18).toFixed(1); // Temp between 18 and 25
-                const mockHumidity = Math.floor(Math.random() * (60 - 40) + 40); // Humidity between 40 and 60
-                const mockFilter = Math.floor(Math.random() * 100); // Filter life from 0 to 100
-                resolve({
-                    ok: true,
-                    json: () => Promise.resolve({ 
-                        state: mockState, 
-                        temperature: mockTemp, 
-                        humidity: mockHumidity, 
-                        filterLife: mockFilter, 
-                        message: 'Initial state retrieved' 
-                    })
-                });
-            }, 1500);
-        });
-        */
 
         if (!response.ok) {
             throw new Error('Failed to fetch state');
@@ -80,9 +58,79 @@ const fetchSystemState = async () => {
 
         // Update the displays with the received data
         currentStateDisplay.textContent = systemStates[data.level];
-        tempDisplay.textContent = data.temperature;
-        humidityDisplay.textContent = data.humidity;
-        filterDisplay.textContent = data.filter;
+
+        let tempValue = parseFloat(data.temperature);
+        tempDisplay.textContent = tempValue == -1 ? '--' : tempValue.toFixed(1);
+
+        if(tempValue != -1)
+        {
+            tempDisplay.textContent = tempValue.toFixed(1);
+
+            // blau: 240, grün 120, gelb: 60, rot: 0
+            // temp: 20 -> grün, 25 -> gelb, 30 -> rot, 17 -> blau
+
+            let tempHue = 0;
+            if(tempValue < 17)
+            {
+                tempHue = 240;
+            }
+            if(tempValue < 20)
+            {
+                tempHue = 120 + ((20 - tempValue) / 3) * 120 // bis zu 17 Grad
+            }
+            else if(tempValue < 25)
+            {
+                tempHue = 60 + ((25 - tempValue) / 5) * 60; // bis zu 24 Grad
+            }
+            else if(tempValue < 30)
+            {
+                tempHue = 0 + ((30 - tempValue) / 5) * 60; // bis zu 29 Grad
+            }
+
+            const tempIcon = document.querySelector('.status-item:nth-child(1) svg');
+            if (tempIcon) {
+                tempIcon.style.fill = `hsl(${tempHue}, 80%, 45%)`;
+                tempDisplay.style.color = `hsl(${tempHue}, 80%, 45%)`;
+            }
+        }
+
+        let humidityValue = parseFloat(data.humidity);
+        humidityDisplay.textContent = humidityValue == -1 ? '--' : humidityValue.toFixed(1);
+
+        if(humidityValue != 1)
+        {
+            humidityValue -= 45;
+            humidityValue = Math.max(0, humidityValue);
+            humidityValue = Math.min(25, humidityValue);
+
+            const humHue = (1 - (humidityValue / 25)) * 120
+
+            const humidityIcon = document.querySelector('.status-item:nth-child(2) svg');
+            if (humidityIcon) {
+                humidityIcon.style.fill = `hsl(${humHue}, 80%, 45%)`;
+                humidityDisplay.style.color = `hsl(${humHue}, 80%, 45%)`;
+            }
+        }
+
+        let filterValue = parseFloat(data.filter);
+        filterDisplay.textContent = filterValue.toFixed(1);
+
+        if(filterValue != -1)
+        {
+            // Farbe berechnen: 120 ist Grün, 0 ist Rot im HSL Farbraum
+            // > 80 ist grün, ab 40 ist rot
+            // Wir interpolieren: 100% -> 120 (Grün), 0% -> 0 (Rot)
+            filterValue = Math.min(80, filterValue);
+            filterValue = Math.max(40, filterValue);
+
+            filterValue -= 40;
+            const hue = (filterValue * 3).toFixed(0);
+            const filterIcon = document.querySelector('.status-item:last-child svg');
+            if (filterIcon) {
+                filterIcon.style.fill = `hsl(${hue}, 80%, 45%)`;
+                filterDisplay.style.color = `hsl(${hue}, 80%, 45%)`;
+            }
+        }
         
         stateSlider.value = data.level; // Set the slider to the fetched state
 

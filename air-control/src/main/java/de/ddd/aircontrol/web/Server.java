@@ -46,6 +46,7 @@ public class Server
 		this.eventQueue = eventQueue;
 		this.ctx = new ThreadLocal<>();
 		gson = new GsonBuilder()
+				.serializeSpecialFloatingPointValues()
 				.registerTypeHierarchyAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
 				.create();
 		
@@ -417,9 +418,9 @@ public class Server
 		
 		return new SystemState(
 				levelToIn(env.ventilation().getLevel()),
-				res.hasTemperature() ? String.format("%.1f", res.temperature()) : "--",
-				res.hasHumidity() ? String.format("%.1f", res.humidity()) : "--",
-				String.format("%.1f", filter),
+				res.hasTemperature() ? res.temperature() : -1,
+				res.hasHumidity() ? res.humidity() : -1,
+				filter,
 				interval > 0 ? (int)interval : null);
 	}
 	
@@ -516,9 +517,9 @@ public class Server
 	
 	public static record SystemState(
 			Integer level,
-			String temperature,
-			String humidity,
-			String filter,
+			double temperature,
+			double humidity,
+			double filter,
 			/** remaining time in ms */
 			Integer interval
 			)
