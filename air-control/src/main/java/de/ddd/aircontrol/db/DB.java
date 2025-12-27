@@ -22,6 +22,9 @@ public class DB
 	
 	private final Connection conn;
 	
+	/** flag if a commit is needed for this db */
+	private boolean dirty;
+	
 	public DB(Path file) throws IOException
 	{
 		if(!Files.exists(file) && file.getParent() != null)
@@ -47,6 +50,9 @@ public class DB
 	        }
 			
 			createTables();
+			
+			// switch auto-commit off and only operate with transaction
+			conn.setAutoCommit(false);
 		}
 		catch(SQLException e)
 		{
@@ -108,13 +114,21 @@ public class DB
 				}
 			}
 			
-			return stmt.executeUpdate();
+			synchronized (this)
+			{
+				var res =  stmt.executeUpdate();
+				dirty = true;
+				return res;
+			}
+			
 		}
 	}
 	
 	public ResultSet execQuery(String sql, List<Object> params) throws SQLException
 	{
-		try(PreparedStatement stmt = conn.prepareStatement(sql))
+		PreparedStatement stmt = conn.prepareStatement(sql);
+		
+		try
 		{
 			for(int i = 0; i < params.size(); i++)
 			{
@@ -141,7 +155,30 @@ public class DB
 				}
 			}
 			
-			return stmt.executeQuery();
+			return new DBResultSet(stmt, stmt.executeQuery());
+		}
+		catch(SQLException e)
+		{
+			stmt.close();
+			throw e;
+		}
+	}
+	
+	public synchronized void commit() throws SQLException
+	{
+		if(dirty)
+		{
+			conn.commit();
+			dirty = false;
+		}
+	}
+	
+	public synchronized void rollback() throws SQLException
+	{
+		if(dirty)
+		{
+			conn.rollback();
+			dirty = false;
 		}
 	}
 }
