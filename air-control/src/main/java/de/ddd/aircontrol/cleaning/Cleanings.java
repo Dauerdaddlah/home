@@ -30,12 +30,21 @@ public class Cleanings
 	
 	public void cleaningDone(LocalDateTime ldt, int number, boolean replaced)
 	{
+		var cleaning = getCleaning(number);
+		
 		Cleaning c = new Cleaning();
 		c.setLdt(ldt);
 		c.setNumber(number);
 		c.setReplaced(replaced);
 		
 		repo.create(c);
+		
+		cleaning.setLastCleaning(ldt);
+		
+		if(replaced)
+		{
+			cleaning.setLastReplacement(ldt);
+		}
 	}
 
 	public void loadLast()

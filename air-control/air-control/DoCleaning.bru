@@ -1,0 +1,22 @@
+meta {
+  name: DoCleaning
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8080/v1/cleaning/1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "replaced": true
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
