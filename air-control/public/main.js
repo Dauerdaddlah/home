@@ -49,6 +49,8 @@ const fetchCleaningData = async () => {
         const response = await fetch('/v1/cleaning');
         if (!response.ok) throw new Error("Fehler beim Laden");
         const cleanings = await response.json();
+
+        let sectionStatus = 'normal'; // Standardstatus
         
         cleaningList.innerHTML = '';
         cleanings.forEach((item, index) => {
@@ -59,6 +61,7 @@ const fetchCleaningData = async () => {
             let statusClass = '';
             if (!item.lastCleaning || (index == 0 && !item.lastReplacement)) {
                 statusClass = 'status-critical'; // Rot, wenn kein Zeitpunkt vorhanden
+                sectionStatus = 'critical';
             } else {
                 const lastDate = new Date(item.lastCleaning);
                 const today = new Date();
@@ -95,16 +98,20 @@ const fetchCleaningData = async () => {
                     
                     if (today > criticalDate || today > criticalDate2) {
                         statusClass = 'status-critical'; // Rot: Überfällig + 15 Tage
+                        sectionStatus = 'critical';
                     } else if (today > warningDate || today > warningDate2) {
                         statusClass = 'status-warning'; // Gelb: Bereich +/- 15 Tage um das Intervall
+                        if (sectionStatus !== 'critical') sectionStatus = 'warning';
                     }
                 }
                 else
                 {
                     if (today > criticalDate) {
                         statusClass = 'status-critical'; // Rot: Überfällig + 15 Tage
+                        sectionStatus = 'critical';
                     } else if (today > warningDate) {
                         statusClass = 'status-warning'; // Gelb: Bereich +/- 15 Tage um das Intervall
+                        if (sectionStatus !== 'critical') sectionStatus = 'warning';
                     }
                 }
             }
@@ -153,6 +160,15 @@ const fetchCleaningData = async () => {
             };
             cleaningList.appendChild(div);
         });
+
+        // Überschrift basierend auf dem Gesamtzustand einfärben
+        cleaningToggle.classList.remove('header-critical', 'header-warning');
+        if (sectionStatus === 'critical') {
+            cleaningToggle.classList.add('header-critical');
+        } else if (sectionStatus === 'warning') {
+            cleaningToggle.classList.add('header-warning');
+        }
+
     } catch (e) {
         console.error(e);
     }

@@ -329,3 +329,19 @@ button:active {
     border-color: var(--primary-color) !important;
     background-color: #e8f5e9 !important;
 }
+
+/* Statusfarben für die Überschrift */
+#cleaning-toggle.header-critical {
+    color: #e53935;
+    border-bottom-color: #e53935;
+}
+
+#cleaning-toggle.header-warning {
+    color: #fbc02d; /* Etwas dunkleres Gelb für bessere Lesbarkeit auf weiß */
+    border-bottom-color: #fbc02d;
+}
+
+/* Sanfter Übergang für die Farben */
+#cleaning-toggle {
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
