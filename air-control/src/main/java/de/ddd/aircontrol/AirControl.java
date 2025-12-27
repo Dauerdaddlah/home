@@ -60,6 +60,7 @@ public class AirControl implements ServerEventQueue
 	public static final String SETTING_PI_MODEL = SETTING_PI_PREFIX + "model";
 	
 	public static final String SETTING_DB_PATH = SETTING_PREFIX + "db.path";
+	public static final String SETTING_COMMIT_INTERVAL = SETTING_PREFIX + "db.commitInterval";
 	
 	public static final String SETTING_DATA_PREFIX = SETTING_PREFIX + "data.";
 	public static final String SETTING_DATA_LOG = SETTING_DATA_PREFIX + "log";
@@ -292,7 +293,11 @@ public class AirControl implements ServerEventQueue
 	{
 		log.info("start loop");
 		
-		addEvent(this::checkAllPeriodically);
+		long delta = settings.getLong(SETTING_CHECK_INTERVAL, 60 * 1000);
+		addEvent(new PeriodicEventAction(delta, this::checkAll, true));
+		
+		long commitDelta = settings.getLong(SETTING_COMMIT_INTERVAL, 60 * 1000 * 10);
+		addEvent(new PeriodicEventAction(commitDelta, this::commit, true));
 		
 		while(true)
 		{
@@ -328,20 +333,10 @@ public class AirControl implements ServerEventQueue
 		events.addEvent(new Event(new EA(a)));
 	}
 	
-	private void checkAllPeriodically(EventQueue queue, Event e) throws Exception
+	public void commit(EventQueue queue, Event e) throws Exception
 	{
-		log.info("start periodic check");
-		try
-		{
-			checkAll(queue, e);
-		}
-		finally
-		{
-			// TODO
-			long delta = settings.getLong(SETTING_CHECK_INTERVAL, 60 * 1000);
-			log.debug("add next check in {}", delta);
-			queue.addEvent(new Event(System.currentTimeMillis() + delta, this::checkAllPeriodically));
-		}
+		log.info("commit");
+		repo.getDb().commit();
 	}
 	
 	public void checkAll(EventQueue queue, Event e) throws Exception
@@ -373,6 +368,32 @@ public class AirControl implements ServerEventQueue
 		public void performAction(EventQueue queue, Event event) throws Exception
 		{
 			ea.performAction(env);
+		}
+	}
+	
+	private static record PeriodicEventAction(long delta, EventAction realAction, boolean coalesce) implements EventAction
+	{
+		@Override
+		public void performAction(EventQueue queue, Event event) throws Exception
+		{
+			log.info("doing periodic action");
+			try
+			{
+				realAction.performAction(queue, event);
+			}
+			finally
+			{
+				if(coalesce)
+				{
+					log.debug("add next periodic action in {}", delta);
+					queue.addEvent(new Event(System.currentTimeMillis() + delta, this));
+				}
+				else
+				{
+					log.debug("add next periodic action at {}", event.due() + delta);
+					queue.addEvent(new Event(event.due() + delta, this));
+				}
+			}
 		}
 	}
 }
