@@ -1,6 +1,7 @@
 package de.ddd.aircontrol.web;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -401,10 +402,24 @@ public class Server
 		long until = env.controllerManual().getUntil();
 		long interval = until - System.currentTimeMillis();
 		
+		// filter cleaning
+		var cleaning = env.cleaning(1);
+		int lifetime = cleaning.getIntervalMax() * cleaning.getReplacementInterval();
+		
+		double filter = 0;
+		
+		if(cleaning.getLastReplacement() != null)
+		{
+			long ageDays = cleaning.getLastReplacement().until(LocalDateTime.now(), ChronoUnit.DAYS);
+			
+			filter = ageDays / (lifetime * 30);
+		}
+		
 		return new SystemState(
 				levelToIn(env.ventilation().getLevel()),
 				res.hasTemperature() ? String.format("%.1f", res.temperature()) : "--",
 				res.hasHumidity() ? String.format("%.1f", res.humidity()) : "--",
+				String.format("%.1f", filter),
 				interval > 0 ? (int)interval : null);
 	}
 	
@@ -503,6 +518,7 @@ public class Server
 			Integer level,
 			String temperature,
 			String humidity,
+			String filter,
 			/** remaining time in ms */
 			Integer interval
 			)

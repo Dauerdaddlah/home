@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -78,7 +79,7 @@ public class DB
 				CREATE TABLE IF NOT EXISTS Cleaning (
 					CleaningId INTEGER PRIMARY KEY AUTOINCREMENT,
 					CleaningNumber INTEGER NOT NULL,
-					CleaningDt DATETIME NOT NULL,
+					CleaningDt TEXT NOT NULL,
 					CleaningReplaced INTEGER NOT NULL
 				)
 				""",
@@ -98,11 +99,14 @@ public class DB
 				}
 				else if(o instanceof Timestamp ts)
 				{
-					stmt.setTimestamp(i + 1, ts);
+					LocalDateTime ldt = ts.toLocalDateTime();
+					stmt.setString(i + 1, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(ldt));
+//					stmt.setTimestamp(i + 1, ts);
 				}
 				else if(o instanceof LocalDateTime ldt)
 				{
-					stmt.setTimestamp(i + 1, Timestamp.valueOf(ldt));
+					stmt.setString(i + 1, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(ldt));
+//					stmt.setTimestamp(i + 1, Timestamp.valueOf(ldt));
 				}
 				else if(o instanceof Boolean b)
 				{

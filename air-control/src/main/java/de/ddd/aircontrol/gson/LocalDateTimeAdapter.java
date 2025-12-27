@@ -2,6 +2,7 @@ package de.ddd.aircontrol.gson;
 
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -18,7 +19,13 @@ public class LocalDateTimeAdapter implements JsonSerializer<LocalDateTime>, Json
 	public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
 			throws JsonParseException
 	{
-		return LocalDateTime.parse(json.toString());
+		if(json.isJsonNull())
+		{
+			return null;
+		}
+		
+		
+		return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 	}
 
 	@Override
@@ -29,7 +36,7 @@ public class LocalDateTimeAdapter implements JsonSerializer<LocalDateTime>, Json
 			return JsonNull.INSTANCE;
 		}
 		
-		return new JsonPrimitive(src.toString());
+		return new JsonPrimitive(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(src));
 	}
 
 }

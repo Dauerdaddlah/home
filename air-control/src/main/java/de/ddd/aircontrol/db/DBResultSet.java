@@ -20,6 +20,8 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -34,6 +36,7 @@ public class DBResultSet implements ResultSet
 		this.res = res;
 	}
 	
+	@Override
 	public boolean next() throws SQLException
 	{
 		boolean next = res.next();
@@ -46,10 +49,17 @@ public class DBResultSet implements ResultSet
 		return next;
 	}
 	
+	@Override
 	public void close() throws SQLException
 	{
 		res.close();
 		stmt.close();
+	}
+	
+	private Timestamp toTimestamp(String string)
+	{
+		LocalDateTime ldt = LocalDateTime.parse(string, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		return Timestamp.valueOf(ldt);
 	}
 	
 	// DELEGATE METHODS
@@ -133,7 +143,7 @@ public class DBResultSet implements ResultSet
 
 	public Timestamp getTimestamp(int columnIndex) throws SQLException
 	{
-		return res.getTimestamp(columnIndex);
+		return toTimestamp(res.getString(columnIndex));
 	}
 
 	public InputStream getAsciiStream(int columnIndex) throws SQLException
@@ -217,7 +227,7 @@ public class DBResultSet implements ResultSet
 
 	public Timestamp getTimestamp(String columnLabel) throws SQLException
 	{
-		return res.getTimestamp(columnLabel);
+		return toTimestamp(res.getString(columnLabel));
 	}
 
 	public InputStream getAsciiStream(String columnLabel) throws SQLException
