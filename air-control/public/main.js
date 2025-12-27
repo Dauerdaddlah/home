@@ -82,6 +82,7 @@ const fetchSystemState = async () => {
         currentStateDisplay.textContent = systemStates[data.level];
         tempDisplay.textContent = data.temperature;
         humidityDisplay.textContent = data.humidity;
+        filterDisplay.textContent = data.filter;
         
         stateSlider.value = data.level; // Set the slider to the fetched state
 

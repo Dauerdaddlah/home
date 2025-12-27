@@ -412,7 +412,7 @@ public class Server
 		{
 			long ageDays = cleaning.getLastReplacement().until(LocalDateTime.now(), ChronoUnit.DAYS);
 			
-			filter = ageDays / (lifetime * 30);
+			filter = 100d - (100d * ageDays / (lifetime * 30));
 		}
 		
 		return new SystemState(
