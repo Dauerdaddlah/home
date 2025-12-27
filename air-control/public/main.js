@@ -33,6 +33,124 @@ const end2Input = document.getElementById('end2-input');
 const end3Input = document.getElementById('end3-input');
 const sendSettingsButton = document.getElementById('send-settings-button');
 
+// references for the cleaning section
+const cleaningList = document.getElementById('cleaning-list');
+const sendCleaningButton = document.getElementById('send-cleaning-button');
+const cleaningDateInput = document.getElementById('cleaning-date');
+const filterExtraOption = document.getElementById('filter-extra-option');
+const filterInterval2Check = document.getElementById('filter-interval-2-check');
+
+let selectedCleaningIds = new Set();
+
+const fetchCleaningData = async () => {
+    try {
+        const response = await fetch('/v1/cleaning');
+        if (!response.ok) throw new Error("Fehler beim Laden");
+        const cleanings = await response.json();
+        
+        cleaningList.innerHTML = '';
+        cleanings.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'cleaning-item';
+            
+            // Formatierung: Letztes Datum anzeigen
+            const lastDateStr = item.lastCleaning ? new Date(item.lastCleaning).toLocaleDateString('de-DE') : 'Nie';
+            const lastDateStr2 = item.lastReplacement ? new Date(item.lastReplacement).toLocaleDateString('de-DE') : 'Nie';
+            
+            let intervallString = `${item.intervalMin}`;
+            let intervallString2 = `${item.intervalMin * item.replacementInterval}`;
+
+            if(item.intervalMin != item.intervalMax)
+            {
+                intervallString += ` - ${item.intervalMax}`;
+                intervallString2 += ` - ${item.intervalMax * item.replacementInterval}`;
+            }
+
+            div.innerHTML = `
+                <input type="checkbox" class="cleaning-checkbox" id="check-${item.number}">
+                <div class="cleaning-info">
+                    <strong>${item.name}</strong>
+                    <span>Alle  ${intervallString} Monate Zuletzt: ${lastDateStr}</span>
+                    ${index === 0 ?
+                         `<div class="cleaning-extra-row">
+                            <input type="checkbox" id="filter-interval-2-check" class="extra-cb">
+                            <label for="filter-interval-2-check">Filterwechsel alle ${intervallString2} Monate Zuletzt: ${lastDateStr2}</label>
+                        </div>`
+                                : ''}
+                </div>
+            `;
+
+            div.onclick = (e) => {
+                // Verhindert Doppelklick, wenn man direkt auf die Checkbox klickt
+                if (e.target.type !== 'checkbox') {
+                    const cb = div.querySelector('.cleaning-checkbox');
+                    cb.checked = !cb.checked;
+                }
+                
+                const isChecked = div.querySelector('.cleaning-checkbox').checked;
+                if (isChecked) selectedCleaningIds.add(item.number);
+                else selectedCleaningIds.delete(item.number);
+                
+                div.classList.toggle('selected', isChecked);
+            };
+            cleaningList.appendChild(div);
+        });
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+sendCleaningButton.onclick = async () => {
+    if (selectedCleaningIds.size === 0) {
+        displayResponse("Fehler: Keine Reinigung ausgewählt.");
+        return;
+    }
+
+    const cleaningDate = cleaningDateInput.value;
+    const extraCb = document.getElementById('filter-interval-2-check');
+    const resetFilter2 = extraCb ? extraCb.checked : false;
+
+    // Wir erstellen ein Array von Promises (eine pro ausgewählter ID)
+    const requests = Array.from(selectedCleaningIds).map(id => {
+        const payload = {
+            ldt: cleaningDate,
+            // Wir senden resetFilterInterval2 nur mit, wenn es die Filterpflege (ID 0 oder 1, je nach Backend) betrifft
+            // Oder wir senden es bei jeder Anfrage mit, falls das Backend es ignoriert
+            replaced: (id === 0 || id === 1) ? resetFilter2 : false 
+        };
+
+        return fetch(`/v1/cleaning/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+    });
+
+    displayResponse(`Sende ${requests.length} Anfragen...`);
+
+    try {
+        // Alle Anfragen parallel ausführen
+        const responses = await Promise.all(requests);
+        
+        // Prüfen, ob alle Anfragen erfolgreich (Status 200-299) waren
+        const allOk = responses.every(res => res.ok);
+
+        if (allOk) {
+            displayResponse("Alle Reinigungen erfolgreich gespeichert.");
+            selectedCleaningIds.clear();
+            // Liste aktualisieren, um die neuen "lastDone" Daten zu sehen
+            fetchCleaningData(); 
+        } else {
+            displayResponse("Einige Anfragen sind fehlgeschlagen.");
+        }
+    } catch (e) {
+        displayResponse(`Netzwerkfehler: ${e.message}`);
+        console.error(e);
+    }
+};
+
 // Function to update the text display based on the slider's value.
 const updateSliderDisplay = () => {
     const stateIndex = parseInt(stateSlider.value);
@@ -47,6 +165,8 @@ const displayResponse = (message) => {
 // Simulate fetching the system's current state from a server.
 const fetchSystemState = async () => {
     displayResponse('Fetching current system state...');
+
+    fetchCleaningData();
     try {
         const response = await fetch('/v1/state', { method: 'GET' });
 
@@ -74,7 +194,7 @@ const fetchSystemState = async () => {
             {
                 tempHue = 240;
             }
-            if(tempValue < 20)
+            else if(tempValue < 20)
             {
                 tempHue = 120 + ((20 - tempValue) / 3) * 120 // bis zu 17 Grad
             }

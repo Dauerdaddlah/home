@@ -1,6 +1,7 @@
 package de.ddd.aircontrol.gson;
 
 import java.lang.reflect.Type;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -24,8 +25,14 @@ public class LocalDateTimeAdapter implements JsonSerializer<LocalDateTime>, Json
 			return null;
 		}
 		
-		
-		return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		try
+		{
+			return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		}
+		catch(Exception e)
+		{
+			return LocalDate.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+		}
 	}
 
 	@Override

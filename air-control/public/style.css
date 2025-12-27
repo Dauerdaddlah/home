@@ -244,3 +244,70 @@ button:active {
     grid-template-columns: 1fr 1fr;
     gap: 15px;
 }
+
+
+.cleaning-controls-container {
+    display: flex;
+    align-items: flex-end; /* Richtet Elemente an der Unterkante aus */
+    gap: 20px;
+    margin-top: 20px;
+    flex-wrap: wrap; /* Zeilenumbruch auf kleinen Displays */
+}
+
+.cleaning-controls-container .input-group {
+    flex: 0 1 auto; /* Verhindert unnötiges Strecken */
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.cleaning-checkbox-small {
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+#send-cleaning-button {
+    align-self: flex-end;
+    height: 42px; /* Gleicht die Höhe des Date-Inputs an */
+}
+
+/* Bestehende Grid-Stile für die Reinigungs-Items */
+.cleaning-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.cleaning-item {
+    background: var(--card-background);
+    padding: 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+}
+
+.cleaning-item.selected {
+    border-color: var(--primary-color);
+    background-color: #e8f5e9;
+}
+
+.cleaning-extra-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px dashed #ccc;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.cleaning-extra-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
