@@ -34,6 +34,8 @@ const end3Input = document.getElementById('end3-input');
 const sendSettingsButton = document.getElementById('send-settings-button');
 
 // references for the cleaning section
+const cleaningToggle = document.getElementById('cleaning-toggle');
+const cleaningContent = document.querySelector('.cleaning-content');
 const cleaningList = document.getElementById('cleaning-list');
 const sendCleaningButton = document.getElementById('send-cleaning-button');
 const cleaningDateInput = document.getElementById('cleaning-date');
@@ -52,6 +54,62 @@ const fetchCleaningData = async () => {
         cleanings.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'cleaning-item';
+
+            // 1. Status bestimmen
+            let statusClass = '';
+            if (!item.lastCleaning || (index == 0 && !item.lastReplacement)) {
+                statusClass = 'status-critical'; // Rot, wenn kein Zeitpunkt vorhanden
+            } else {
+                const lastDate = new Date(item.lastCleaning);
+                const today = new Date();
+                
+                // Berechnung: Zeitpunkt + Intervall in Monaten
+                const dueDateMin = new Date(lastDate);
+                dueDateMin.setMonth(dueDateMin.getMonth() + item.intervalMin);
+                const dueDateMax = new Date(lastDate);
+                dueDateMax.setMonth(dueDateMax.getMonth() + item.intervalMax);
+                
+                // Schwellenwerte berechnen
+                const criticalDate = new Date(dueDateMax);
+                criticalDate.setDate(criticalDate.getDate() + 15); // + 15 Tage
+                
+                const warningDate = new Date(dueDateMin);
+                warningDate.setDate(warningDate.getDate() - 15); // - 15 Tage
+                
+                if(index == 0)
+                {
+                    const lastDate2 = new Date(item.lastReplacement);
+                    
+                    // Berechnung: Zeitpunkt + Intervall in Monaten
+                    const dueDateMin2 = new Date(lastDate2);
+                    dueDateMin2.setMonth(dueDateMin2.getMonth() + (item.intervalMin * item.replacementInterval));
+                    const dueDateMax2 = new Date(lastDate2);
+                    dueDateMax2.setMonth(dueDateMax2.getMonth() + (item.intervalMax * item.replacementInterval));
+                    
+                    // Schwellenwerte berechnen
+                    const criticalDate2 = new Date(dueDateMax2);
+                    criticalDate2.setDate(criticalDate2.getDate() + 15); // + 15 Tage
+                    
+                    const warningDate2 = new Date(dueDateMin2);
+                    warningDate2.setDate(warningDate2.getDate() - 15); // - 15 Tage
+                    
+                    if (today > criticalDate || today > criticalDate2) {
+                        statusClass = 'status-critical'; // Rot: Überfällig + 15 Tage
+                    } else if (today > warningDate || today > warningDate2) {
+                        statusClass = 'status-warning'; // Gelb: Bereich +/- 15 Tage um das Intervall
+                    }
+                }
+                else
+                {
+                    if (today > criticalDate) {
+                        statusClass = 'status-critical'; // Rot: Überfällig + 15 Tage
+                    } else if (today > warningDate) {
+                        statusClass = 'status-warning'; // Gelb: Bereich +/- 15 Tage um das Intervall
+                    }
+                }
+            }
+
+            if (statusClass) div.classList.add(statusClass);
             
             // Formatierung: Letztes Datum anzeigen
             const lastDateStr = item.lastCleaning ? new Date(item.lastCleaning).toLocaleDateString('de-DE') : 'Nie';
@@ -425,6 +483,16 @@ manualLevelToggle.addEventListener('click', () => {
         collapsibleContent.style.maxHeight = null;
     } else {
         collapsibleContent.style.maxHeight = collapsibleContent.scrollHeight + "px";
+    }
+});
+
+// Event listener for the collapsible section
+cleaningToggle.addEventListener('click', () => {
+    cleaningToggle.classList.toggle('active');
+    if (cleaningContent.style.maxHeight) {
+        cleaningContent.style.maxHeight = null;
+    } else {
+        cleaningContent.style.maxHeight = cleaningContent.scrollHeight + "px";
     }
 });
 

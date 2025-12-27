@@ -57,16 +57,21 @@
         </div>
 
         <div class="section" id="cleaning-section">
-            <h2>Reinigungen</h2>
-            <div id="cleaning-list" class="cleaning-grid">
+            <button class="collapsible" id="cleaning-toggle">
+                Reinigungen
+                <svg class="collapsible-caret" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <div class="cleaning-content collapsible-content">
+                <div id="cleaning-list" class="cleaning-grid">
+                    </div>
+                
+                <div class="cleaning-controls">
+                    <div class="input-group">
+                        <label for="cleaning-date">Zeitpunkt festlegen:</label>
+                        <input type="date" id="cleaning-date">
+                    </div>
+                    <button id="send-cleaning-button" style="margin-top: 15px;">Reinigung protokollieren</button>
                 </div>
-            
-            <div class="cleaning-controls">
-                <div class="input-group">
-                    <label for="cleaning-date">Zeitpunkt festlegen:</label>
-                    <input type="date" id="cleaning-date">
-                </div>
-                <button id="send-cleaning-button" style="margin-top: 15px;">Reinigung protokollieren</button>
             </div>
         </div>
 

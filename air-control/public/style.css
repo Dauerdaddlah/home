@@ -311,3 +311,21 @@ button:active {
     height: 16px;
     cursor: pointer;
 }
+
+/* Rot: Kritisch / Überfällig oder kein Datum */
+.cleaning-item.status-critical {
+    border-color: #e53935;
+    background-color: #ffebee;
+}
+
+/* Gelb: Warnung / Bald fällig */
+.cleaning-item.status-warning {
+    border-color: #fdd835;
+    background-color: #fffde7;
+}
+
+/* Wenn ausgewählt, soll die Auswahlfarbe Priorität haben */
+.cleaning-item.selected {
+    border-color: var(--primary-color) !important;
+    background-color: #e8f5e9 !important;
+}
